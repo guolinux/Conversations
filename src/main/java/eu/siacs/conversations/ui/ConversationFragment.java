@@ -20,6 +20,10 @@ import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -46,8 +50,11 @@ import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.GridLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -65,6 +72,8 @@ import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Lifecycle;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
@@ -173,6 +182,29 @@ public class ConversationFragment extends XmppFragment
                 MessageAdapter.OnContactPictureClicked {
 
     private static Instant ackModeration = Instant.MIN;
+    private final int[][] CHAT_THEME_COLORS = {
+            { Color.parseColor("#4CAF50"), Color.parseColor("#388E3C"), Color.parseColor("#1B5E20") },
+            { Color.parseColor("#2196F3"), Color.parseColor("#1976D2"), Color.parseColor("#0D47A1") },
+            { Color.parseColor("#9C27B0"), Color.parseColor("#7B1FA2"), Color.parseColor("#4A148C") },
+            { Color.parseColor("#FF9800"), Color.parseColor("#F57C00"), Color.parseColor("#E65100") },
+            { Color.parseColor("#E91E63"), Color.parseColor("#C2185B"), Color.parseColor("#880E4F") },
+            { Color.parseColor("#9E9E9E"), Color.parseColor("#616161"), Color.parseColor("#424242") },
+            { Color.parseColor("#03A9F4"), Color.parseColor("#0288D1"), Color.parseColor("#01579B") },
+            { Color.parseColor("#00BCD4"), Color.parseColor("#0097A7"), Color.parseColor("#006064") },
+            { Color.parseColor("#8BC34A"), Color.parseColor("#689F38"), Color.parseColor("#33691E") },
+            { Color.parseColor("#FFC107"), Color.parseColor("#FFA000"), Color.parseColor("#FF6F00") },
+            { Color.parseColor("#795548"), Color.parseColor("#5D4037"), Color.parseColor("#3E2723") },
+            { Color.parseColor("#607D8B"), Color.parseColor("#455A64"), Color.parseColor("#263238") },
+            { Color.parseColor("#F44336"), Color.parseColor("#D32F2F"), Color.parseColor("#B71C1C") },
+            { Color.parseColor("#673AB7"), Color.parseColor("#512DA8"), Color.parseColor("#311B92") },
+            { Color.parseColor("#00E676"), Color.parseColor("#00C853"), Color.parseColor("#009624") },
+            { Color.parseColor("#FF5722"), Color.parseColor("#E64A19"), Color.parseColor("#BF360C") },
+            { Color.parseColor("#009688"), Color.parseColor("#00796B"), Color.parseColor("#004D40") },
+            { Color.parseColor("#607D8B"), Color.parseColor("#546E7A"), Color.parseColor("#37474F") },
+            { Color.parseColor("#FFEB3B"), Color.parseColor("#FBC02D"), Color.parseColor("#F57F17") },
+            { Color.parseColor("#3F51B5"), Color.parseColor("#303F9F"), Color.parseColor("#1A237E") },
+            { Color.parseColor("#000000"), Color.parseColor("#121212"), Color.parseColor("#212121") }
+    };
 
     public static final int REQUEST_SEND_MESSAGE = 0x0201;
     public static final int REQUEST_DECRYPT_PGP = 0x0202;
@@ -1077,6 +1109,10 @@ public class ConversationFragment extends XmppFragment
         }
     }
 
+    public void setupIme() {
+        this.binding.textinput.refreshIme();
+    }
+
     private void handleActivityResult(ActivityResult activityResult) {
         if (activityResult.resultCode == AppCompatActivity.RESULT_OK) {
             handlePositiveActivityResult(activityResult.requestCode, activityResult.data);
@@ -1118,22 +1154,15 @@ public class ConversationFragment extends XmppFragment
                 break;
             case ATTACHMENT_CHOICE_CHOOSE_FILE:
             case ATTACHMENT_CHOICE_RECORD_VIDEO:
+            case ATTACHMENT_CHOICE_RECORD_VOICE:
+                final Attachment.Type type =
+                        requestCode == ATTACHMENT_CHOICE_RECORD_VOICE
+                                ? Attachment.Type.RECORDING
+                                : Attachment.Type.FILE;
                 final List<Attachment> fileUris =
-                        Attachment.extractAttachments(requireContext(), data, Attachment.Type.FILE);
+                        Attachment.extractAttachments(requireContext(), data, type);
                 mediaPreviewAdapter.addMediaPreviews(fileUris);
                 toggleInputMethod();
-                break;
-            case ATTACHMENT_CHOICE_RECORD_VOICE:
-                final List<Attachment> recordings =
-                        Attachment.extractAttachments(
-                                requireContext(), data, Attachment.Type.RECORDING);
-                final boolean autoSendRecording =
-                        data.getBooleanExtra(RecordingActivity.EXTRA_AUTO_SEND_RECORDING, false);
-                mediaPreviewAdapter.addMediaPreviews(recordings);
-                toggleInputMethod();
-                if (autoSendRecording) {
-                    commitAttachments();
-                }
                 break;
             case ATTACHMENT_CHOICE_LOCATION:
                 final double latitude = data.getDoubleExtra("latitude", 0);
@@ -2040,6 +2069,11 @@ public class ConversationFragment extends XmppFragment
     }
 
     private void createNewConnection(final Message message) {
+        if (!requireXmppActivity().xmppConnectionService.hasInternetConnection()) {
+            Toast.makeText(getActivity(), R.string.not_connected_try_again, Toast.LENGTH_SHORT)
+                    .show();
+            return;
+        }
         requireXmppActivity()
                 .xmppConnectionService
                 .getHttpConnectionManager()
@@ -2623,7 +2657,7 @@ public class ConversationFragment extends XmppFragment
             messageListAdapter.stopAudioPlayer();
         }
         if (this.conversation != null) {
-            final String msg = CharSequences.nullToEmpty(this.binding.textinput.getText());
+            final String msg = this.binding.textinput.getText().toString();
             storeNextMessage(msg);
             updateChatState(this.conversation, msg);
             requireXmppActivity()
@@ -2645,7 +2679,7 @@ public class ConversationFragment extends XmppFragment
             return;
         }
         Log.d(Config.LOGTAG, "ConversationFragment.saveMessageDraftStopAudioPlayer()");
-        final String msg = CharSequences.nullToEmpty(this.binding.textinput.getText());
+        final String msg = this.binding.textinput.getText().toString();
         storeNextMessage(msg);
         updateChatState(this.conversation, msg);
         messageListAdapter.stopAudioPlayer();
@@ -2702,6 +2736,8 @@ public class ConversationFragment extends XmppFragment
             this.conversation.trim();
         }
 
+        setupIme();
+
         final boolean scrolledToBottomAndNoPending =
                 this.scrolledToBottom() && pendingScrollState.peek() == null;
 
@@ -2718,16 +2754,7 @@ public class ConversationFragment extends XmppFragment
             this.binding.textinput.setText(CharSequences.EMPTY_STRING);
         }
         this.binding.textinput.setKeyboardListener(this);
-        this.messageListAdapter.updatePreferences();
-        final var appSettings = new AppSettings(requireContext());
-        this.inputSettings =
-                new InputSettings(
-                        appSettings.isColorfulChatBubbles(),
-                        appSettings.isDisplayEnterKey(),
-                        appSettings.isEnterSend(),
-                        appSettings.isScrollToBottom());
-        this.binding.textinput.refreshIme(this.inputSettings);
-        setTextInputColors();
+        messageListAdapter.updatePreferences();
         refresh(false);
         requireXmppActivity().invalidateOptionsMenu();
         this.conversation.messagesLoaded.set(true);
@@ -2761,50 +2788,6 @@ public class ConversationFragment extends XmppFragment
                 .getNotificationService()
                 .setOpenConversation(this.conversation);
         return true;
-    }
-
-    private void setTextInputColors() {
-        final var colorfulChatBubbles = this.inputSettings.colorfulChatBubbles();
-        final var bubbleColor =
-                colorfulChatBubbles
-                        ? MessageAdapter.BubbleColor.TERTIARY
-                        : MessageAdapter.BubbleColor.SURFACE_HIGH;
-        this.binding.textinput.setTextColor(
-                MessageAdapter.bubbleToOnSurfaceColor(this.binding.textinput, bubbleColor));
-        this.binding.textInputHint.setTextColor(
-                MessageAdapter.bubbleToOnSurfaceColor(this.binding.textInputHint, bubbleColor));
-        MessageAdapter.setBackgroundTint(this.binding.inputLayout, bubbleColor);
-        if (bubbleColor == MessageAdapter.BubbleColor.TERTIARY) {
-            this.binding.textinput.setHintTextColor(
-                    ContextCompat.getColorStateList(
-                            requireContext(), R.color.hint_on_tertiary_container));
-            setTextCursorDrawable(this.binding.textinput, R.drawable.cursor_on_tertiary_container);
-        } else {
-            this.binding.textinput.setHintTextColor(
-                    ContextCompat.getColorStateList(requireContext(), R.color.hint_on_surface));
-            setTextCursorDrawable(this.binding.textinput, R.drawable.cursor_on_surface);
-        }
-    }
-
-    private static void setTextCursorDrawable(
-            final EditText editText, @DrawableRes final int drawable) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            editText.setTextCursorDrawable(drawable);
-        } else {
-            setTextCursorDrawableCompat(editText, drawable);
-        }
-    }
-
-    @SuppressLint("PrivateApi")
-    private static void setTextCursorDrawableCompat(
-            final EditText editText, @DrawableRes final int drawable) {
-        try {
-            final var field = TextView.class.getDeclaredField("mCursorDrawableRes");
-            field.setAccessible(true);
-            field.set(editText, drawable);
-        } catch (final NoSuchFieldException | IllegalAccessException e) {
-            Log.w(Config.LOGTAG, "could not set cursor drawable", e);
-        }
     }
 
     private void resetUnreadMessagesCount() {
@@ -3128,7 +3111,12 @@ public class ConversationFragment extends XmppFragment
         }
         storeNextMessage();
         updateChatMsgHint();
-        if (this.inputSettings.scrollToBottom() || scrolledToBottom()) {
+        SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        final boolean prefScrollToBottom =
+                p.getBoolean(
+                        "scroll_to_bottom",
+                        requireContext().getResources().getBoolean(R.bool.scroll_to_bottom));
+        if (prefScrollToBottom || scrolledToBottom()) {
             new Handler()
                     .post(
                             () -> {
@@ -3182,7 +3170,8 @@ public class ConversationFragment extends XmppFragment
     }
 
     public void updateSendButton() {
-        final var hasAttachments = mediaPreviewAdapter.hasAttachments();
+        boolean hasAttachments =
+                mediaPreviewAdapter != null && mediaPreviewAdapter.hasAttachments();
         final Conversation c = this.conversation;
         final var connection = c.getAccount().getXmppConnection();
         final Presence.Availability status;
@@ -3222,16 +3211,10 @@ public class ConversationFragment extends XmppFragment
         }
         if (conversation.getMode() == Conversation.MODE_SINGLE) {
             final var account = conversation.getAccount();
-            final var connection = account.getXmppConnection();
             final var state =
-                    connection
+                    account.getXmppConnection()
                             .getManager(ChatStateManager.class)
                             .getIncoming(conversation.getAddress());
-            final var zonedDateTimeFuture =
-                    connection
-                            .getManager(EntityTimeManager.class)
-                            .getZonedDateTime(conversation.getAddress());
-            final var zonedDateTime = getOrNull(zonedDateTimeFuture);
             if (Objects.equals(state, Composing.class)) {
                 this.messageList.add(
                         Message.createStatusMessage(
@@ -3245,23 +3228,6 @@ public class ConversationFragment extends XmppFragment
                                         R.string.contact_has_stopped_typing,
                                         conversation.getName())));
             } else {
-                final var contact = conversation.getContact();
-                final var availability = contact.getShownStatus();
-                if (availability == Presence.Availability.DND
-                        && EntityTimeManager.noRecentMessages(conversation)) {
-                    final var dndMessage =
-                            Message.createStatusMessage(conversation, MessageAdapter.BODY_DND);
-                    this.messageList.add(dndMessage);
-                } else if (zonedDateTime != null
-                        && EntityTimeManager.isDifferentTimeZone(zonedDateTime)
-                        && EntityTimeManager.isNightTime(zonedDateTime)
-                        && EntityTimeManager.noRecentMessages(conversation)) {
-                    final var localTimeMessage =
-                            Message.createStatusMessage(
-                                    conversation, MessageAdapter.BODY_LOCAL_TIME);
-                    localTimeMessage.setTime(zonedDateTime.getOffset().getTotalSeconds());
-                    this.messageList.add(localTimeMessage);
-                }
                 for (int i = this.messageList.size() - 1; i >= 0; --i) {
                     final Message message = this.messageList.get(i);
                     if (message.getType() != Message.TYPE_STATUS) {
@@ -3374,17 +3340,6 @@ public class ConversationFragment extends XmppFragment
             }
             this.messageList.add(statusMessage);
         }
-    }
-
-    private static ZonedDateTime getOrNull(final ListenableFuture<ZonedDateTime> future) {
-        if (future.isDone()) {
-            try {
-                return future.get();
-            } catch (final ExecutionException | InterruptedException ignored) {
-                return null;
-            }
-        }
-        return null;
     }
 
     private void stopScrolling() {
@@ -3601,11 +3556,16 @@ public class ConversationFragment extends XmppFragment
 
     @Override
     public boolean onEnterPressed(final boolean isCtrlPressed) {
-        if (isCtrlPressed || this.inputSettings.enterIsSend()) {
+        if (isCtrlPressed || enterIsSend()) {
             sendMessage();
             return true;
         }
         return false;
+    }
+
+    private boolean enterIsSend() {
+        final SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        return p.getBoolean("enter_is_send", getResources().getBoolean(R.bool.enter_is_send));
     }
 
     public boolean onArrowUpCtrlPressed() {
@@ -3815,7 +3775,7 @@ public class ConversationFragment extends XmppFragment
                 popupMenu.inflate(R.menu.muc_details_context);
                 final Menu menu = popupMenu.getMenu();
                 MucDetailsContextMenuHelper.configureMucDetailsContextMenu(
-                        requireActivity(), menu, user);
+                        requireActivity(), menu, conversation, user);
                 popupMenu.setOnMenuItemClickListener(
                         menuItem ->
                                 MucDetailsContextMenuHelper.onContextItemSelected(
@@ -3831,9 +3791,13 @@ public class ConversationFragment extends XmppFragment
                                                     message.getContact(), fingerprint);
                                     break;
                                 case R.id.action_show_qr_code:
-                                    final var uri =
-                                            new MiniUri.Xmpp(message.getContact().getAddress());
-                                    requireXmppActivity().showQrCode(uri);
+                                    requireXmppActivity()
+                                            .showQrCode(
+                                                    "xmpp:"
+                                                            + message.getContact()
+                                                                    .getAddress()
+                                                                    .asBareJid()
+                                                                    .toString());
                                     break;
                             }
                             return true;
@@ -3925,10 +3889,4 @@ public class ConversationFragment extends XmppFragment
         }
         throw new IllegalStateException("Fragment not attached to ConversationsActivity");
     }
-
-    public record InputSettings(
-            boolean colorfulChatBubbles,
-            boolean displayEnterKey,
-            boolean enterIsSend,
-            boolean scrollToBottom) {}
 }

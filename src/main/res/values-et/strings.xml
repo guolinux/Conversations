@@ -1153,6 +1153,7 @@
     <string name="mobile_ticket">Nutipääsmik</string>
     <string name="open_keyboard">Ava klahvistik</string>
     <string name="emoji_reactions">Emojiga reageerimine</string>
+    <string name="change_theme">Muuda teemat</string>
     <string name="server_invite">Kutse kasutama serverit</string>
     <string name="qr_code_actions">Skaneeri QR-koodi, näita QR-koodi serveri kutse</string>
     <string name="qr_code_contains_link">Kas avad veebilingi?</string>

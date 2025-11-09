@@ -1119,4 +1119,5 @@
     <string name="video_is_enabled_tap_to_disable">El vídeo està habilitat. Toca per desactivar.</string>
     <string name="video_is_disabled_tap_to_enable">El vídeo està desactivat. Toca per activar-lo.</string>
     <string name="server_info_login_mechanism">Mecanisme d\'inici de sessió</string>
+    <string name="change_theme">Canvia el tema</string>
 </resources>

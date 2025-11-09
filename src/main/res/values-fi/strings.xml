@@ -1118,4 +1118,5 @@
     <string name="strong_transport_security">Vahva kuljetusturvallisuus</string>
     <string name="require_tls_v1_3">Vaatii Transport Layer Security (TLS) -protokollan version 1.3 kaikille yhteyksille</string>
     <string name="empty_conversations_list_hint">Kun aloitat uuden keskustelun, näet sen lueteltuna täällä</string>
+    <string name="change_theme">Vaihda teemaa</string>
 </resources>

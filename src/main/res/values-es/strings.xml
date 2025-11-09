@@ -1146,6 +1146,7 @@
     <string name="mobile_ticket">Pase digital</string>
     <string name="emoji_reactions">Reacciones con emojis</string>
     <string name="open_keyboard">Abrir teclado</string>
+    <string name="change_theme">Choose a theme</string>
     <string name="server_invite">Invitar al servidor</string>
     <string name="qr_code_actions">Escanear QR, Mostrar QR, Invitación al servidor</string>
     <string name="qr_code_contains_link">¿Abrir enlace web?</string>
