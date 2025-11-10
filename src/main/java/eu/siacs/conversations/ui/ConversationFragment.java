@@ -20,7 +20,11 @@ import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
@@ -32,6 +36,7 @@ import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -1327,14 +1332,34 @@ public class ConversationFragment extends XmppFragment
                 new EditMessageActionModeCallback(this.binding.textinput));
         AppSettings settings = new AppSettings(getContext());
         int bgRes = settings.getChatBackgroundRes();
-
         View backgroundView = this.binding.chatBackground;
+
         if (bgRes != -1) {
             backgroundView.setBackgroundResource(bgRes);
         } else {
             backgroundView.setBackgroundResource(R.drawable.theme_1);
         }
 
+        Drawable background = backgroundView.getBackground();
+
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        float dpWidth = metrics.widthPixels / metrics.density;
+
+        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        int orientation = getResources().getConfiguration().orientation;
+
+        if (background instanceof BitmapDrawable bitmapDrawable) {
+            if ((dpWidth > 600) || (orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+                bitmapDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+            }
+            bitmapDrawable.setDither(true);
+        }
+
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
+            if (background != null) {
+                background.setColorFilter(ContextCompat.getColor(requireContext(),R.color.blackW), PorterDuff.Mode.SRC_ATOP);
+            }
+        }
 
         return binding.getRoot();
     }

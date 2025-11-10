@@ -17,6 +17,12 @@
             android:title="@string/pref_light_dark_mode"
             app:useSimpleSummaryProvider="true" />
         <Preference
+            android:defaultValue="@bool/align_start"
+            android:icon="@drawable/ic_wallpaper"
+            android:key="pref_choose_chat_theme"
+            app:summary="@string/change_theme"
+            app:title="@string/chat_background_title" />
+        <Preference
             android:icon="@drawable/ic_forum_24dp"
             app:fragment="eu.siacs.conversations.ui.fragment.settings.InterfaceBubblesSettingsFragment"
             app:summary="@string/pref_chat_bubbles_summary"

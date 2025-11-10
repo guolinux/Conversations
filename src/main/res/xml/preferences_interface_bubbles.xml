@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <SwitchPreferenceCompat
         android:defaultValue="@bool/use_green_background"
         android:icon="@drawable/ic_colors_24dp"
@@ -20,12 +19,6 @@
         android:key="align_start"
         android:summary="@string/pref_align_start_summary"
         android:title="@string/pref_align_start" />
-    <Preference
-        android:defaultValue="@bool/align_start"
-        android:icon="@drawable/ic_wallpaper"
-        android:key="pref_choose_chat_theme"
-        app:summary="@string/change_theme"
-        app:title="@string/chat_background_title" />
     <PreferenceCategory android:title="@string/pref_category_avatars">
         <SwitchPreferenceCompat
             android:defaultValue="@bool/show_avatars"
