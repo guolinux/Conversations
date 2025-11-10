@@ -90,4 +90,5 @@
     <string name="send_unencrypted_message">Sendi neĉifrotan mesaĝon</string>
     <string name="send_message">Sendi mesaĝon</string>
     <string name="change_theme">Ŝanĝi la temon</string>
+    <string name="chat_background_title">Babilfona fono</string>
 </resources>

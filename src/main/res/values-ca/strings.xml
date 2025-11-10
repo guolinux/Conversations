@@ -1120,4 +1120,5 @@
     <string name="video_is_disabled_tap_to_enable">El vídeo està desactivat. Toca per activar-lo.</string>
     <string name="server_info_login_mechanism">Mecanisme d\'inici de sessió</string>
     <string name="change_theme">Canvia el tema</string>
+    <string name="chat_background_title">থিম পরিবর্তন করুন</string>
 </resources>

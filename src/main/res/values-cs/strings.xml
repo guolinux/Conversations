@@ -1138,4 +1138,5 @@
     <string name="server_invite">Pozvat na server</string>
     <string name="contact_has_paused_their_notifications">%s má pozastavené notifikace</string>
     <string name="change_theme">Změnit téma</string>
+    <string name="chat_background_title">Fons de pantalla del xat</string>
 </resources>

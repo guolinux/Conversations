@@ -407,4 +407,16 @@ public class AppSettings {
                 .putLong(INSTALLATION_ID, installationId)
                 .apply();
     }
+    public void setChatBackgroundRes(int resId) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putInt("chat_background_res", resId)
+                .apply();
+    }
+
+    public int getChatBackgroundRes() {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getInt("chat_background_res", -1);
+    }
+
 }

@@ -713,4 +713,5 @@
         <item quantity="other">%1$d parte-hartzaile ikusi</item>
     </plurals>
     <string name="change_theme">Aldatu gaia.</string>
+    <string name="chat_background_title">Txataren atzeko planoa</string>
 </resources>

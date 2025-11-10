@@ -112,4 +112,5 @@
     <string name="title_activity_new_chat">নতুন চ্যাট</string>
     <string name="unblock_domain_text">%s থেকে সবাইকে আনব্লক করতে চান?</string>
     <string name="change_theme">থিম পরিবর্তন করুন</string>
+    <string name="chat_background_title">থিম পরিবর্তন করুন</string>
 </resources>

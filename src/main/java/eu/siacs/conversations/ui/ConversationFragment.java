@@ -1325,6 +1325,16 @@ public class ConversationFragment extends XmppFragment
 
         this.binding.textinput.setCustomInsertionActionModeCallback(
                 new EditMessageActionModeCallback(this.binding.textinput));
+        AppSettings settings = new AppSettings(getContext());
+        int bgRes = settings.getChatBackgroundRes();
+
+        View backgroundView = this.binding.chatBackground;
+        if (bgRes != -1) {
+            backgroundView.setBackgroundResource(bgRes);
+        } else {
+            backgroundView.setBackgroundResource(R.drawable.theme_1);
+        }
+
 
         return binding.getRoot();
     }
@@ -3889,4 +3899,7 @@ public class ConversationFragment extends XmppFragment
         }
         throw new IllegalStateException("Fragment not attached to ConversationsActivity");
     }
+
+
+
 }

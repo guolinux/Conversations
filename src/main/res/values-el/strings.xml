@@ -1102,4 +1102,5 @@
     <string name="pref_show_11_chats">Συνομιλίες 1:1</string>
     <string name="pref_show_11_chats_summary">Απεικόνιση εικόνων χρήστη στις συνομιλίες 1:1. (Οι εικόνες χρήστη στις ομαδικές συνομιλίες θα φαίνονται πάντα.)</string>
     <string name="change_theme">Αλλαγή θέματος</string>
+    <string name="chat_background_title">Ταπετσαρία συνομιλίας</string>
 </resources>
