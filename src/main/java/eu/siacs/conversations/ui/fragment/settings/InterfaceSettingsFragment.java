@@ -1,7 +1,10 @@
 package eu.siacs.conversations.ui.fragment.settings;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -13,6 +16,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -26,6 +31,25 @@ import eu.siacs.conversations.ui.activity.SettingsActivity;
 import eu.siacs.conversations.ui.util.SettingsUtils;
 
 public class InterfaceSettingsFragment extends XmppPreferenceFragment {
+    private final ActivityResultLauncher<String[]> imagePickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) {
+                    try {
+                        requireContext().getContentResolver().takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        );
+
+                        AppSettings settings = new AppSettings(requireContext());
+                        settings.setChatBackgroundUri(uri.toString());
+
+                        Toast.makeText(requireContext(), R.string.save, Toast.LENGTH_SHORT).show();
+
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
@@ -94,12 +118,16 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                 R.drawable.theme_1,
                 R.drawable.theme_2,
                 R.drawable.theme_3,
-                R.drawable.theme_8,
                 R.drawable.theme_4,
-                R.drawable.theme_9,
-                R.drawable.theme_6,
                 R.drawable.theme_5,
+                R.drawable.theme_6,
                 R.drawable.theme_7,
+                R.drawable.theme_8,
+                R.drawable.theme_9,
+                R.drawable.theme_10,
+                R.drawable.theme_11,
+                R.drawable.theme_12,
+                R.drawable.theme_13
         };
 
         GridLayout grid = view.findViewById(R.id.gridChatBackgrounds);
@@ -117,7 +145,27 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         grid.setColumnCount(columnCount);
         grid.setAlignmentMode(GridLayout.ALIGN_MARGINS);
         grid.setUseDefaultMargins(true);
+        FrameLayout uploadContainer = new FrameLayout(requireContext());
+        GridLayout.LayoutParams uploadParams = new GridLayout.LayoutParams();
+        uploadParams.width = imageSize;
+        uploadParams.height = imageSize;
+        uploadParams.setMargins(12, 12, 12, 12);
+        uploadContainer.setLayoutParams(uploadParams);
+        uploadContainer.setBackgroundResource(R.drawable.bg_upload_placeholder);
 
+        ImageView plusIcon = new ImageView(requireContext());
+        FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER
+        );
+        plusIcon.setLayoutParams(iconParams);
+        plusIcon.setImageResource(R.drawable.ic_camera_alt_24dp);
+        uploadContainer.addView(plusIcon);
+
+        uploadContainer.setOnClickListener(v -> openImagePicker());
+
+        grid.addView(uploadContainer);
         for (Integer resId : wallpapers) {
             FrameLayout itemContainer = new FrameLayout(requireContext());
             GridLayout.LayoutParams containerParams = new GridLayout.LayoutParams();
@@ -193,7 +241,13 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
             grid.addView(itemContainer);
         }
 
+
         dialog.show();
     }
+
+    private void openImagePicker() {
+        imagePickerLauncher.launch(new String[]{"image/*"});
+    }
+
 
 }

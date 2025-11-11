@@ -411,6 +411,7 @@ public class AppSettings {
         PreferenceManager.getDefaultSharedPreferences(context)
                 .edit()
                 .putInt("chat_background_res", resId)
+                .remove("chat_background_uri")
                 .apply();
     }
 
@@ -418,5 +419,16 @@ public class AppSettings {
         return PreferenceManager.getDefaultSharedPreferences(context)
                 .getInt("chat_background_res", -1);
     }
+    public void setChatBackgroundUri(String uri) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putString("chat_background_uri", uri)
+                .remove("chat_background_res")
+                .apply();
+    }
 
+    public String getChatBackgroundUri() {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getString("chat_background_uri", null);
+    }
 }

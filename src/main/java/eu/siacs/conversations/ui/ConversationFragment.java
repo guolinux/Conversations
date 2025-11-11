@@ -22,6 +22,8 @@ import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Shader;
@@ -167,6 +169,10 @@ import im.conversations.android.xmpp.model.muc.Role;
 import im.conversations.android.xmpp.model.stanza.Presence;
 import im.conversations.android.xmpp.model.state.Composing;
 import im.conversations.android.xmpp.model.state.Paused;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
@@ -1310,31 +1316,8 @@ public class ConversationFragment extends XmppFragment
 
         this.binding.textinput.setCustomInsertionActionModeCallback(
                 new EditMessageActionModeCallback(this.binding.textinput));
-        AppSettings settings = new AppSettings(getContext());
-        int bgRes = settings.getChatBackgroundRes();
-        View backgroundView = this.binding.chatBackground;
-        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
 
-        if (bgRes != -1) {
-            backgroundView.setBackgroundResource(bgRes);
-        }
-
-        Drawable background = backgroundView.getBackground();
-
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        float dpWidth = metrics.widthPixels / metrics.density;
-
-        int orientation = getResources().getConfiguration().orientation;
-
-        if (background instanceof BitmapDrawable bitmapDrawable) {
-            if ((dpWidth > 600) || (orientation == Configuration.ORIENTATION_LANDSCAPE)) {
-                bitmapDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-            }
-            bitmapDrawable.setDither(true);
-        }
-        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
-            applySystemOverlay(background);
-        }
+        applyChatBackground();
 
         return binding.getRoot();
     }
@@ -3899,6 +3882,71 @@ public class ConversationFragment extends XmppFragment
         }
         throw new IllegalStateException("Fragment not attached to ConversationsActivity");
     }
+    @SuppressLint("Recycle")
+    private void applyChatBackground() {
+        AppSettings settings = new AppSettings(requireContext());
+        int bgRes = settings.getChatBackgroundRes();
+        String bgUri = settings.getChatBackgroundUri();
+
+        View backgroundView = this.binding.chatBackground;
+        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        int orientation = getResources().getConfiguration().orientation;
+
+        Drawable background = null;
+        InputStream inputStream = null;
+
+        try {
+            if (bgUri != null && !bgUri.isEmpty()) {
+                Uri uri = Uri.parse(bgUri);
+
+                try {
+                    requireContext().getContentResolver().takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    );
+                } catch (SecurityException ignored) {}
+
+                inputStream = requireContext().getContentResolver().openInputStream(uri);
+                if (inputStream != null) {
+                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                    if (bitmap != null) {
+                        background = new BitmapDrawable(getResources(), bitmap);
+                    }
+                }
+            }
+
+            else if (bgRes != -1) {
+                background = ContextCompat.getDrawable(requireContext(), bgRes);
+            }
+
+            if (background != null) {
+                backgroundView.setBackground(background);
+            }
+
+            DisplayMetrics metrics = getResources().getDisplayMetrics();
+            float dpWidth = metrics.widthPixels / metrics.density;
+            if (background instanceof BitmapDrawable bitmapDrawable) {
+                if (((dpWidth > 600) || (orientation == Configuration.ORIENTATION_LANDSCAPE)) && (bgUri == null)) {
+                    bitmapDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+                }
+                bitmapDrawable.setDither(true);
+            }
+
+            if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES && background != null) {
+                applySystemOverlay(background);
+            }
+
+        } catch (SecurityException | FileNotFoundException e) {
+            e.printStackTrace();
+            settings.setChatBackgroundUri(null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (inputStream != null) {
+                try { inputStream.close(); } catch (IOException ignored) {}
+            }
+        }
+    }
 
     private void applySystemOverlay(Drawable background) {
         if (background == null) return;
@@ -3912,7 +3960,5 @@ public class ConversationFragment extends XmppFragment
 
         background.setColorFilter(overlay, PorterDuff.Mode.SRC_ATOP);
     }
-
-
 
 }
