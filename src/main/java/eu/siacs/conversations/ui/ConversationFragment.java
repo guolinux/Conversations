@@ -1333,11 +1333,16 @@ public class ConversationFragment extends XmppFragment
         AppSettings settings = new AppSettings(getContext());
         int bgRes = settings.getChatBackgroundRes();
         View backgroundView = this.binding.chatBackground;
+        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
 
         if (bgRes != -1) {
-            backgroundView.setBackgroundResource(bgRes);
-        } else {
-            backgroundView.setBackgroundResource(R.drawable.theme_1);
+            if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
+                backgroundView.setBackgroundResource(R.drawable.theme_10);
+            }
+            else{
+                backgroundView.setBackgroundResource(bgRes);
+            }
+
         }
 
         Drawable background = backgroundView.getBackground();
@@ -1345,7 +1350,6 @@ public class ConversationFragment extends XmppFragment
         DisplayMetrics metrics = getResources().getDisplayMetrics();
         float dpWidth = metrics.widthPixels / metrics.density;
 
-        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         int orientation = getResources().getConfiguration().orientation;
 
         if (background instanceof BitmapDrawable bitmapDrawable) {
@@ -1353,12 +1357,6 @@ public class ConversationFragment extends XmppFragment
                 bitmapDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
             }
             bitmapDrawable.setDither(true);
-        }
-
-        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
-            if (background != null) {
-                background.setColorFilter(ContextCompat.getColor(requireContext(),R.color.blackW), PorterDuff.Mode.SRC_ATOP);
-            }
         }
 
         return binding.getRoot();

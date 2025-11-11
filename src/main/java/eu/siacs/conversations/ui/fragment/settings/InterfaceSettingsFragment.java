@@ -88,7 +88,9 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
         View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_background_selector, null, false);
         dialog.setContentView(view);
-        final int[] wallpapers = {
+
+        final Integer[] wallpapers = {
+                -1,
                 R.drawable.theme_1,
                 R.drawable.theme_2,
                 R.drawable.theme_3,
@@ -97,12 +99,12 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                 R.drawable.theme_6,
                 R.drawable.theme_7,
                 R.drawable.theme_8,
-                R.drawable.theme_9
+                R.drawable.theme_9,
+                R.drawable.theme_10
         };
 
         GridLayout grid = view.findViewById(R.id.gridChatBackgrounds);
         AppSettings settings = new AppSettings(requireContext());
-
         final int currentSaved = settings.getChatBackgroundRes();
 
         final int[] selectedWallpaper = { currentSaved };
@@ -117,7 +119,7 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         grid.setAlignmentMode(GridLayout.ALIGN_MARGINS);
         grid.setUseDefaultMargins(true);
 
-        for (int resId : wallpapers) {
+        for (Integer resId : wallpapers) {
             FrameLayout itemContainer = new FrameLayout(requireContext());
             GridLayout.LayoutParams containerParams = new GridLayout.LayoutParams();
             containerParams.width = imageSize;
@@ -131,7 +133,14 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
             imageView.setLayoutParams(ivParams);
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            imageView.setImageResource(resId);
+
+            if (resId != -1) {
+                imageView.setImageResource(resId);
+            }
+            else {
+                imageView.setImageResource(R.drawable.ic_no_wallpaper);
+            }
+
 
             TextView badge = new TextView(requireContext());
             FrameLayout.LayoutParams badgeParams = new FrameLayout.LayoutParams(
@@ -145,7 +154,7 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
             badge.setPadding(10, 6, 10, 6);
             GradientDrawable gd = new GradientDrawable();
             gd.setShape(GradientDrawable.OVAL);
-            gd.setColor(ContextCompat.getColor(requireContext(),R.color.green_800));
+            gd.setColor(ContextCompat.getColor(requireContext(), R.color.green_800));
             badge.setBackground(gd);
             badge.setVisibility(View.GONE);
 
@@ -173,7 +182,12 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                 settings.setChatBackgroundRes(id);
                 selectedWallpaper[0] = id;
 
-                Toast.makeText(requireContext(), R.string.save, Toast.LENGTH_SHORT).show();
+                if (id == -1) {
+                    Toast.makeText(requireContext(), R.string.delete, Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(), R.string.save, Toast.LENGTH_SHORT).show();
+                }
+
                 dialog.dismiss();
             });
 
@@ -182,4 +196,5 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
 
         dialog.show();
     }
+
 }
