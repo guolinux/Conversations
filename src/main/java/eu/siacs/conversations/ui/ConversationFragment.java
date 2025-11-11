@@ -21,6 +21,7 @@ import android.content.IntentSender.SendIntentException;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Shader;
@@ -38,6 +39,7 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
@@ -71,6 +73,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.view.MenuProvider;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.databinding.DataBindingUtil;
@@ -1336,13 +1339,7 @@ public class ConversationFragment extends XmppFragment
         int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
 
         if (bgRes != -1) {
-            if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
-                backgroundView.setBackgroundResource(R.drawable.theme_10);
-            }
-            else{
-                backgroundView.setBackgroundResource(bgRes);
-            }
-
+            backgroundView.setBackgroundResource(bgRes);
         }
 
         Drawable background = backgroundView.getBackground();
@@ -1357,6 +1354,9 @@ public class ConversationFragment extends XmppFragment
                 bitmapDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
             }
             bitmapDrawable.setDither(true);
+        }
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
+            applySystemOverlay(background);
         }
 
         return binding.getRoot();
@@ -3921,6 +3921,19 @@ public class ConversationFragment extends XmppFragment
             return ca;
         }
         throw new IllegalStateException("Fragment not attached to ConversationsActivity");
+    }
+
+    private void applySystemOverlay(Drawable background) {
+        if (background == null) return;
+
+        TypedValue typedValue = new TypedValue();
+        Resources.Theme theme = requireContext().getTheme();
+        theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceVariant, typedValue, true);
+
+        int baseColor = typedValue.data;
+        int overlay = ColorUtils.setAlphaComponent(baseColor, 100);
+
+        background.setColorFilter(overlay, PorterDuff.Mode.SRC_ATOP);
     }
 
 
