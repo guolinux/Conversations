@@ -94,12 +94,12 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                 R.drawable.theme_1,
                 R.drawable.theme_2,
                 R.drawable.theme_3,
-                R.drawable.theme_4,
-                R.drawable.theme_5,
-                R.drawable.theme_6,
-                R.drawable.theme_7,
                 R.drawable.theme_8,
-                R.drawable.theme_9
+                R.drawable.theme_4,
+                R.drawable.theme_9,
+                R.drawable.theme_6,
+                R.drawable.theme_5,
+                R.drawable.theme_7,
         };
 
         GridLayout grid = view.findViewById(R.id.gridChatBackgrounds);

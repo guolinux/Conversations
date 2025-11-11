@@ -190,29 +190,6 @@ public class ConversationFragment extends XmppFragment
                 MessageAdapter.OnContactPictureClicked {
 
     private static Instant ackModeration = Instant.MIN;
-    private final int[][] CHAT_THEME_COLORS = {
-            { Color.parseColor("#4CAF50"), Color.parseColor("#388E3C"), Color.parseColor("#1B5E20") },
-            { Color.parseColor("#2196F3"), Color.parseColor("#1976D2"), Color.parseColor("#0D47A1") },
-            { Color.parseColor("#9C27B0"), Color.parseColor("#7B1FA2"), Color.parseColor("#4A148C") },
-            { Color.parseColor("#FF9800"), Color.parseColor("#F57C00"), Color.parseColor("#E65100") },
-            { Color.parseColor("#E91E63"), Color.parseColor("#C2185B"), Color.parseColor("#880E4F") },
-            { Color.parseColor("#9E9E9E"), Color.parseColor("#616161"), Color.parseColor("#424242") },
-            { Color.parseColor("#03A9F4"), Color.parseColor("#0288D1"), Color.parseColor("#01579B") },
-            { Color.parseColor("#00BCD4"), Color.parseColor("#0097A7"), Color.parseColor("#006064") },
-            { Color.parseColor("#8BC34A"), Color.parseColor("#689F38"), Color.parseColor("#33691E") },
-            { Color.parseColor("#FFC107"), Color.parseColor("#FFA000"), Color.parseColor("#FF6F00") },
-            { Color.parseColor("#795548"), Color.parseColor("#5D4037"), Color.parseColor("#3E2723") },
-            { Color.parseColor("#607D8B"), Color.parseColor("#455A64"), Color.parseColor("#263238") },
-            { Color.parseColor("#F44336"), Color.parseColor("#D32F2F"), Color.parseColor("#B71C1C") },
-            { Color.parseColor("#673AB7"), Color.parseColor("#512DA8"), Color.parseColor("#311B92") },
-            { Color.parseColor("#00E676"), Color.parseColor("#00C853"), Color.parseColor("#009624") },
-            { Color.parseColor("#FF5722"), Color.parseColor("#E64A19"), Color.parseColor("#BF360C") },
-            { Color.parseColor("#009688"), Color.parseColor("#00796B"), Color.parseColor("#004D40") },
-            { Color.parseColor("#607D8B"), Color.parseColor("#546E7A"), Color.parseColor("#37474F") },
-            { Color.parseColor("#FFEB3B"), Color.parseColor("#FBC02D"), Color.parseColor("#F57F17") },
-            { Color.parseColor("#3F51B5"), Color.parseColor("#303F9F"), Color.parseColor("#1A237E") },
-            { Color.parseColor("#000000"), Color.parseColor("#121212"), Color.parseColor("#212121") }
-    };
 
     public static final int REQUEST_SEND_MESSAGE = 0x0201;
     public static final int REQUEST_DECRYPT_PGP = 0x0202;
