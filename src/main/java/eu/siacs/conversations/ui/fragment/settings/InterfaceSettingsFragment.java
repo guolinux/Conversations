@@ -1,10 +1,8 @@
 package eu.siacs.conversations.ui.fragment.settings;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -123,11 +121,7 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                 R.drawable.theme_6,
                 R.drawable.theme_7,
                 R.drawable.theme_8,
-                R.drawable.theme_9,
-                R.drawable.theme_10,
-                R.drawable.theme_11,
-                R.drawable.theme_12,
-                R.drawable.theme_13
+                R.drawable.theme_9
         };
 
         GridLayout grid = view.findViewById(R.id.gridChatBackgrounds);
