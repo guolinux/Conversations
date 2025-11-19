@@ -2413,6 +2413,10 @@ public class ConversationFragment extends XmppFragment
         String oldString = editable.toString().trim();
         final int pos = this.binding.textinput.getSelectionStart();
         if (oldString.isEmpty() || pos == 0) {
+            // ensure nicks that invoke /me are invalidated by prepending an empty ZWNJ character
+            if (nick.startsWith("/me ")) {
+                nick = "\u200C" + " " + nick;
+            }
             editable.insert(0, nick + ": ");
         } else {
             final char before = editable.charAt(pos - 1);
