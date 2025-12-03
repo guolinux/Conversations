@@ -1,8 +1,12 @@
 package eu.siacs.conversations.ui.fragment.settings;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -18,7 +22,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.preference.Preference;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -26,6 +29,9 @@ import com.google.android.material.color.DynamicColors;
 import eu.siacs.conversations.AppSettings;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.ui.activity.SettingsActivity;
+import eu.siacs.conversations.ui.background.PatternGenerator;
+import eu.siacs.conversations.ui.background.PatternResolver;
+import eu.siacs.conversations.ui.background.WallpaperStorage;
 import eu.siacs.conversations.ui.util.SettingsUtils;
 
 public class InterfaceSettingsFragment extends XmppPreferenceFragment {
@@ -107,137 +113,211 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
     }
 
     private void showBackgroundSelectorDialog() {
+
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
-        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_background_selector, null, false);
+        View view = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_background_selector, null, false);
         dialog.setContentView(view);
 
-        final Integer[] wallpapers = {
-                -1,
-                R.drawable.theme_1,
-                R.drawable.theme_2,
-                R.drawable.theme_3,
-                R.drawable.theme_4,
-                R.drawable.theme_5,
-                R.drawable.theme_6,
-                R.drawable.theme_7,
-                R.drawable.theme_8
-        };
-
         GridLayout grid = view.findViewById(R.id.gridChatBackgrounds);
+
         AppSettings settings = new AppSettings(requireContext());
         final int currentSaved = settings.getChatBackgroundRes();
 
-        final int[] selectedWallpaper = { currentSaved };
-        final TextView[] lastSelectedBadge = { null };
-        final FrameLayout[] lastSelectedContainer = { null };
+        final TextView[] lastSelectedBadge = {null};
+
+        final PatternGenerator.PatternType[] patterns = {
+                PatternGenerator.PatternType.SOFT_MESH,
+                PatternGenerator.PatternType.GRAINY_PAPER,
+                PatternGenerator.PatternType.DOTTED_NOISE,
+                PatternGenerator.PatternType.DIAMOND_GRID,
+                PatternGenerator.PatternType.FLOATING_SPHERES,
+                PatternGenerator.PatternType.PERLIN_LIKE_NOISE,
+                PatternGenerator.PatternType.SOFT_GRADIENT,
+                PatternGenerator.PatternType.SCRIBBLE_PRO,
+                PatternGenerator.PatternType.FIBER_TEXTURE
+        };
 
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
-        int columnCount = screenWidth > 900 ? 3 : 2;
-        int imageSize = (screenWidth / columnCount) - (int) (24 * getResources().getDisplayMetrics().density);
+        int columns = screenWidth > 900 ? 3 : 2;
+        grid.setColumnCount(columns);
 
-        grid.setColumnCount(columnCount);
-        grid.setAlignmentMode(GridLayout.ALIGN_MARGINS);
-        grid.setUseDefaultMargins(true);
-        FrameLayout uploadContainer = new FrameLayout(requireContext());
-        GridLayout.LayoutParams uploadParams = new GridLayout.LayoutParams();
-        uploadParams.width = imageSize;
-        uploadParams.height = imageSize;
-        uploadParams.setMargins(12, 12, 12, 12);
-        uploadContainer.setLayoutParams(uploadParams);
-        uploadContainer.setBackgroundResource(R.drawable.bg_upload_placeholder);
-
-        ImageView plusIcon = new ImageView(requireContext());
-        FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER
-        );
-        plusIcon.setLayoutParams(iconParams);
-        plusIcon.setImageResource(R.drawable.ic_camera_alt_24dp);
-        uploadContainer.addView(plusIcon);
-
-        uploadContainer.setOnClickListener(v -> openImagePicker());
-
-        grid.addView(uploadContainer);
-        for (Integer resId : wallpapers) {
-            FrameLayout itemContainer = new FrameLayout(requireContext());
-            GridLayout.LayoutParams containerParams = new GridLayout.LayoutParams();
-            containerParams.width = imageSize;
-            containerParams.height = imageSize;
-            containerParams.setMargins(12, 12, 12, 12);
-            itemContainer.setLayoutParams(containerParams);
-            itemContainer.setTag(resId);
-
-            ImageView imageView = new ImageView(requireContext());
-            FrameLayout.LayoutParams ivParams = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-            imageView.setLayoutParams(ivParams);
-            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-
-            if (resId != -1) {
-                imageView.setImageResource(resId);
-            }
-            else {
-                imageView.setImageResource(R.drawable.ic_no_wallpaper);
-            }
+        int size = (screenWidth / columns) - (int) (32 * getResources().getDisplayMetrics().density);
 
 
-            TextView badge = new TextView(requireContext());
-            FrameLayout.LayoutParams badgeParams = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
-            int badgeMargin = (int) (6 * getResources().getDisplayMetrics().density);
-            badgeParams.setMargins(badgeMargin, badgeMargin, badgeMargin, badgeMargin);
-            badge.setLayoutParams(badgeParams);
-            badge.setText("\u2713");
-            badge.setTextColor(Color.WHITE);
-            badge.setTextSize(12f);
-            badge.setPadding(10, 6, 10, 6);
-            GradientDrawable gd = new GradientDrawable();
-            gd.setShape(GradientDrawable.OVAL);
-            gd.setColor(ContextCompat.getColor(requireContext(), R.color.green_800));
-            badge.setBackground(gd);
-            badge.setVisibility(View.GONE);
+        FrameLayout uploadItem = createUploadItem(size);
+        grid.addView(uploadItem);
 
-            if (resId == currentSaved) {
+        uploadItem.setOnClickListener(v -> openImagePicker());
+
+        FrameLayout noWallpaperItem = createNoWallpaperItem(size);
+        grid.addView(noWallpaperItem);
+
+        TextView badgeNone = createSelectionBadge();
+        if (currentSaved == -1) badgeNone.setVisibility(View.VISIBLE);
+        noWallpaperItem.addView(badgeNone);
+
+        noWallpaperItem.setOnClickListener(v -> {
+            clearLastBadge(lastSelectedBadge);
+
+            badgeNone.setVisibility(View.VISIBLE);
+            lastSelectedBadge[0] = badgeNone;
+
+            settings.setChatBackgroundRes(-1);
+            settings.setChatBackgroundLightUri(null);
+            settings.setChatBackgroundDarkUri(null);
+
+            dialog.dismiss();
+        });
+
+        for (int i = 0; i < patterns.length; i++) {
+
+            Bitmap previewBmp = PatternGenerator.generate(requireContext(), patterns[i], 400);
+
+            FrameLayout item = new FrameLayout(requireContext());
+            GridLayout.LayoutParams p = new GridLayout.LayoutParams();
+            p.width = size;
+            p.height = size;
+            p.setMargins(16, 16, 16, 16);
+            item.setLayoutParams(p);
+            item.setTag("pattern_" + i);
+
+            ImageView preview = new ImageView(requireContext());
+            preview.setLayoutParams(new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            ));
+            preview.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            preview.setImageBitmap(previewBmp);
+            item.addView(preview);
+
+            TextView badge = createSelectionBadge();
+            if (currentSaved == ("pattern_" + i).hashCode())
+                badge.setVisibility(View.VISIBLE);
+
+            item.addView(badge);
+
+            int index = i;
+
+            item.setOnClickListener(v -> {
+
+                clearLastBadge(lastSelectedBadge);
                 badge.setVisibility(View.VISIBLE);
                 lastSelectedBadge[0] = badge;
-                lastSelectedContainer[0] = itemContainer;
-            }
 
-            itemContainer.addView(imageView);
-            itemContainer.addView(badge);
+                int patternId = ("pattern_" + index).hashCode();
+                settings.setChatBackgroundRes(patternId);
 
-            itemContainer.setOnClickListener(v -> {
-                Integer id = (Integer) v.getTag();
-                if (id == null) return;
+                new Thread(() -> {
 
-                if (lastSelectedBadge[0] != null && lastSelectedBadge[0] != badge) {
-                    lastSelectedBadge[0].setVisibility(View.GONE);
-                }
+                    PatternGenerator.PatternType type =
+                            PatternResolver.getTypeFromId(patternId);
 
-                badge.setVisibility(View.VISIBLE);
-                lastSelectedBadge[0] = badge;
-                lastSelectedContainer[0] = itemContainer;
+                    Bitmap light = PatternGenerator.generate(requireContext(), type, 1400);
 
-                settings.setChatBackgroundRes(id);
-                selectedWallpaper[0] = id;
+                    Bitmap dark = PatternGenerator.generate(requireContext(), type, 1400);
+                    Canvas c = new Canvas(dark);
+                    Paint pDark = new Paint();
+                    pDark.setColor(Color.argb(130, 0, 0, 0)); // assombrissement propre
+                    c.drawRect(0, 0, dark.getWidth(), dark.getHeight(), pDark);
 
-                if (id == -1) {
-                    Toast.makeText(requireContext(), R.string.delete, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(requireContext(), R.string.save, Toast.LENGTH_SHORT).show();
-                }
+                    Uri uriLight = WallpaperStorage.saveWallpaper(
+                            requireContext(),
+                            light,
+                            "wall_light.jpg"
+                    );
+
+                    Uri uriDark = WallpaperStorage.saveWallpaper(
+                            requireContext(),
+                            dark,
+                            "wall_dark.jpg"
+                    );
+
+                    if (uriLight != null)
+                        settings.setChatBackgroundLightUri(uriLight.toString());
+
+                    if (uriDark != null)
+                        settings.setChatBackgroundDarkUri(uriDark.toString());
+
+                }).start();
+
+                Toast.makeText(requireContext(), R.string.save, Toast.LENGTH_SHORT).show();
 
                 dialog.dismiss();
             });
 
-            grid.addView(itemContainer);
+            grid.addView(item);
         }
-
 
         dialog.show();
     }
+    private FrameLayout createUploadItem(int size) {
+        FrameLayout item = new FrameLayout(requireContext());
+        GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+        params.width = size;
+        params.height = size;
+        params.setMargins(16, 16, 16, 16);
+        item.setLayoutParams(params);
 
+        item.setBackgroundResource(R.drawable.bg_upload_placeholder);
+
+        ImageView icon = new ImageView(requireContext());
+        icon.setImageResource(R.drawable.ic_camera_alt_24dp);
+        FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER
+        );
+        icon.setLayoutParams(ip);
+        item.addView(icon);
+
+        return item;
+    }
+
+    private TextView createSelectionBadge() {
+        TextView badge = new TextView(requireContext());
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP | Gravity.END
+        );
+        params.setMargins(8, 8, 8, 8);
+
+        badge.setLayoutParams(params);
+        badge.setText("✔");
+        badge.setTextColor(Color.WHITE);
+        badge.setTextSize(12);
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setShape(GradientDrawable.OVAL);
+        bg.setColor(Color.parseColor("#4CAF50"));
+        badge.setBackground(bg);
+
+        badge.setPadding(10, 8, 10, 8);
+        badge.setVisibility(View.GONE);
+
+        return badge;
+    }
+    private FrameLayout createNoWallpaperItem(int size) {
+        FrameLayout item = new FrameLayout(requireContext());
+        GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+        params.width = size;
+        params.height = size;
+        params.setMargins(16, 16, 16, 16);
+        item.setLayoutParams(params);
+
+        ImageView iv = new ImageView(requireContext());
+        iv.setImageResource(R.drawable.ic_no_wallpaper);
+        iv.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+
+        item.addView(iv);
+        return item;
+    }
+    private void clearLastBadge(TextView[] lastSelectedBadge) {
+        if (lastSelectedBadge[0] != null) {
+            lastSelectedBadge[0].setVisibility(View.GONE);
+        }
+    }
     private void openImagePicker() {
         imagePickerLauncher.launch(new String[]{"image/*"});
     }

@@ -8,6 +8,7 @@ import androidx.annotation.BoolRes;
 import androidx.annotation.IntegerRes;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.annotation.Nullable;
 import androidx.preference.PreferenceManager;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -430,5 +431,50 @@ public class AppSettings {
     public String getChatBackgroundUri() {
         return PreferenceManager.getDefaultSharedPreferences(context)
                 .getString("chat_background_uri", null);
+    }
+    public void setSelectedPatternName(String name) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putString("chat_background_pattern_name", name)
+                .apply();
+    }
+    @Nullable
+    public String getSelectedPatternName() {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getString("chat_background_pattern_name", null);
+    }
+    public void clearChatBackground() {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .remove("chat_background_pattern_name")
+                .remove("chat_background_uri")
+                .remove("bg_light_uri")
+                .remove("bg_dark_uri")
+                .apply();
+    }
+    public void setChatBackgroundLightUri(String uri) {
+        clearChatBackground();
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putString("chat_background_uri", uri)
+                .putString("bg_light_uri", uri).apply();
+    }
+
+    public String getChatBackgroundLightUri() {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getString("bg_light_uri", null);
+    }
+
+    public void setChatBackgroundDarkUri(String uri) {
+        clearChatBackground();
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putString("chat_background_uri", uri)
+                .putString("bg_dark_uri", uri).apply();
+    }
+
+    public String getChatBackgroundDarkUri() {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getString("bg_dark_uri", null);
     }
 }

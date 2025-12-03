@@ -84,6 +84,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Lifecycle;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
@@ -122,6 +123,9 @@ import eu.siacs.conversations.services.QuickConversationsService;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.ui.adapter.MediaPreviewAdapter;
 import eu.siacs.conversations.ui.adapter.MessageAdapter;
+import eu.siacs.conversations.ui.background.PatternGenerator;
+import eu.siacs.conversations.ui.background.PatternResolver;
+import eu.siacs.conversations.ui.background.WallpaperStorage;
 import eu.siacs.conversations.ui.util.ActivityResult;
 import eu.siacs.conversations.ui.util.Attachment;
 import eu.siacs.conversations.ui.util.ConversationMenuConfigurator;
@@ -2230,6 +2234,7 @@ public class ConversationFragment extends XmppFragment
     public void onResume() {
         super.onResume();
         binding.messagesView.post(this::fireReadEvent);
+        applyChatBackground();
     }
 
     private void fireReadEvent() {
@@ -3882,83 +3887,70 @@ public class ConversationFragment extends XmppFragment
         }
         throw new IllegalStateException("Fragment not attached to ConversationsActivity");
     }
-    @SuppressLint("Recycle")
     private void applyChatBackground() {
+
+        if (binding == null) return;
+
+        View bg = binding.chatBackground;
         AppSettings settings = new AppSettings(requireContext());
-        int bgRes = settings.getChatBackgroundRes();
+
+        String uriLight = settings.getChatBackgroundLightUri();
+        String uriDark  = settings.getChatBackgroundDarkUri();
         String bgUri = settings.getChatBackgroundUri();
 
-        View backgroundView = this.binding.chatBackground;
-        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        int orientation = getResources().getConfiguration().orientation;
+        int mode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
 
-        Drawable background = null;
-        InputStream inputStream = null;
+        String selectedUri =
+                (mode == Configuration.UI_MODE_NIGHT_YES) ? uriDark : uriLight;
+
+        if (selectedUri == null) {
+            bg.setBackground(null);
+            return;
+        }
 
         try {
             if (bgUri != null && !bgUri.isEmpty()) {
-                Uri uri = Uri.parse(bgUri);
+                selectedUri = bgUri;
+            }
 
-                try {
-                    requireContext().getContentResolver().takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    );
-                } catch (SecurityException ignored) {}
+            InputStream in = requireContext().getContentResolver().openInputStream(Uri.parse(selectedUri));
+            Bitmap bmp = BitmapFactory.decodeStream(in);
+            bg.setBackground(new BitmapDrawable(getResources(), bmp));
 
-                inputStream = requireContext().getContentResolver().openInputStream(uri);
-                if (inputStream != null) {
-                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                    if (bitmap != null) {
-                        background = new BitmapDrawable(getResources(), bitmap);
+            Drawable bgs = bg.getBackground();
+            if (bg == null) return;
+
+            DisplayMetrics metrics = getResources().getDisplayMetrics();
+            Configuration config = getResources().getConfiguration();
+
+            int orientation = config.orientation;
+            float dpWidth = metrics.widthPixels / metrics.density;
+
+            boolean isUserWallpaper = (settings.getChatBackgroundUri() != null);
+
+            if (bgs instanceof BitmapDrawable bitmapDrawable) {
+
+                bitmapDrawable.setDither(true);
+                bitmapDrawable.setFilterBitmap(true);
+
+                if (isUserWallpaper) {
+                    bitmapDrawable.setTileModeXY(null, null);
+                    bitmapDrawable.setGravity(Gravity.CENTER);
+                } else {
+                    boolean isLargeScreen = dpWidth >= 500;
+                    boolean isLandscape   = orientation == Configuration.ORIENTATION_LANDSCAPE;
+
+                    if (isLargeScreen || isLandscape) {
+                        bitmapDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+                    } else {
+                        bitmapDrawable.setTileModeXY(null, null);
                     }
                 }
             }
 
-            else if (bgRes != -1) {
-                background = ContextCompat.getDrawable(requireContext(), bgRes);
-            }
 
-            if (background != null) {
-                backgroundView.setBackground(background);
-            }
-
-            DisplayMetrics metrics = getResources().getDisplayMetrics();
-            float dpWidth = metrics.widthPixels / metrics.density;
-            if (background instanceof BitmapDrawable bitmapDrawable) {
-                if (((dpWidth > 600) || (orientation == Configuration.ORIENTATION_LANDSCAPE)) && (bgUri == null)) {
-                    bitmapDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-                }
-                bitmapDrawable.setDither(true);
-            }
-
-            if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES && background != null) {
-                applySystemOverlay(background);
-            }
-
-        } catch (SecurityException | FileNotFoundException e) {
-            e.printStackTrace();
-            settings.setChatBackgroundUri(null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (inputStream != null) {
-                try { inputStream.close(); } catch (IOException ignored) {}
-            }
+        } catch (Exception e) {
+            bg.setBackground(null);
         }
     }
-
-    private void applySystemOverlay(Drawable background) {
-        if (background == null) return;
-
-        TypedValue typedValue = new TypedValue();
-        Resources.Theme theme = requireContext().getTheme();
-        theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceVariant, typedValue, true);
-
-        int baseColor = typedValue.data;
-        int overlay = ColorUtils.setAlphaComponent(baseColor, 100);
-
-        background.setColorFilter(overlay, PorterDuff.Mode.SRC_ATOP);
-    }
-
 }
