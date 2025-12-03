@@ -1144,6 +1144,8 @@
     <string name="no_contacts_permission">%1$s nécessite l\'accès à vos contacts</string>
     <string name="server_info_moderated_message_retraction">XEP-0425 : Rétractation de Message Modéré</string>
     <string name="server_info_occupant_id">XEP-0421 : Identifiants des occupant·es</string>
+    <string name="change_theme">Choisissez un thème</string>
+    <string name="chat_background_title">Arrière-plan du chat</string>
     <string name="account_status_tls_error_protocol">Sécurité du transport faible (Pas de TLS 1.3)</string>
     <string name="account_status_tls_error_untrusted">Certificat sans confiance</string>
     <string name="enable_account_to_delete">Ce compte est désactivé. Activez-le pour le supprimer du serveur.</string>
