@@ -1,5 +1,7 @@
 package eu.siacs.conversations.ui.fragment.settings;
 
+import static eu.siacs.conversations.ui.background.PatternGenerator.PatternType.*;
+
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -127,15 +129,15 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         final TextView[] lastSelectedBadge = {null};
 
         final PatternGenerator.PatternType[] patterns = {
-                PatternGenerator.PatternType.SOFT_MESH,
-                PatternGenerator.PatternType.GRAINY_PAPER,
-                PatternGenerator.PatternType.DOTTED_NOISE,
-                PatternGenerator.PatternType.DIAMOND_GRID,
-                PatternGenerator.PatternType.FLOATING_SPHERES,
-                PatternGenerator.PatternType.PERLIN_LIKE_NOISE,
-                PatternGenerator.PatternType.SOFT_GRADIENT,
-                PatternGenerator.PatternType.SCRIBBLE_PRO,
-                PatternGenerator.PatternType.FIBER_TEXTURE
+                SOFT_MESH,
+                GRAINY_PAPER,
+                DOTTED_NOISE,
+                DIAMOND_GRID,
+                FLOATING_SPHERES,
+                PERLIN_LIKE_NOISE,
+                SOFT_GRADIENT,
+                SCRIBBLE_PRO,
+                FIBER_TEXTURE
         };
 
         int screenWidth = getResources().getDisplayMetrics().widthPixels;

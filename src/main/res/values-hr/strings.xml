@@ -200,5 +200,4 @@
     <string name="channel_full_jid_example">kanal@konferencija.primjer.hr/nadimak</string>
     <string name="notification_restored_backup_subtitle">Ne zaboravi aktivirati račun.</string>
     <string name="enable_notifications">Aktiviraj obavijesti</string>
-    <string name="change_theme">Odaberite temu</string>
 </resources>
