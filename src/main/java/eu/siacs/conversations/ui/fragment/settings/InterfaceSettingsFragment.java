@@ -2,11 +2,10 @@ package eu.siacs.conversations.ui.fragment.settings;
 
 import static eu.siacs.conversations.ui.background.PatternGenerator.PatternType.*;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -32,7 +31,6 @@ import eu.siacs.conversations.AppSettings;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.ui.activity.SettingsActivity;
 import eu.siacs.conversations.ui.background.PatternGenerator;
-import eu.siacs.conversations.ui.background.PatternResolver;
 import eu.siacs.conversations.ui.background.WallpaperStorage;
 import eu.siacs.conversations.ui.util.SettingsUtils;
 
@@ -115,17 +113,15 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
     }
 
     private void showBackgroundSelectorDialog() {
-
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
         View view = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_background_selector, null, false);
         dialog.setContentView(view);
 
         GridLayout grid = view.findViewById(R.id.gridChatBackgrounds);
-
         AppSettings settings = new AppSettings(requireContext());
-        final int currentSaved = settings.getChatBackgroundRes();
 
+        final int currentSaved = settings.getChatBackgroundRes();
         final TextView[] lastSelectedBadge = {null};
 
         final PatternGenerator.PatternType[] patterns = {
@@ -146,10 +142,8 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
 
         int size = (screenWidth / columns) - (int) (32 * getResources().getDisplayMetrics().density);
 
-
         FrameLayout uploadItem = createUploadItem(size);
         grid.addView(uploadItem);
-
         uploadItem.setOnClickListener(v -> openImagePicker());
 
         FrameLayout noWallpaperItem = createNoWallpaperItem(size);
@@ -161,20 +155,16 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
 
         noWallpaperItem.setOnClickListener(v -> {
             clearLastBadge(lastSelectedBadge);
-
             badgeNone.setVisibility(View.VISIBLE);
             lastSelectedBadge[0] = badgeNone;
 
             settings.setChatBackgroundRes(-1);
-            settings.setChatBackgroundLightUri(null);
-            settings.setChatBackgroundDarkUri(null);
+            settings.setChatBackgroundUri(null);
 
             dialog.dismiss();
         });
 
         for (int i = 0; i < patterns.length; i++) {
-
-            Bitmap previewBmp = PatternGenerator.generate(requireContext(), patterns[i], 400);
 
             FrameLayout item = new FrameLayout(requireContext());
             GridLayout.LayoutParams p = new GridLayout.LayoutParams();
@@ -182,7 +172,16 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
             p.height = size;
             p.setMargins(16, 16, 16, 16);
             item.setLayoutParams(p);
-            item.setTag("pattern_" + i);
+
+            int patternId = ("pattern_" + i).hashCode();
+            item.setTag(patternId);
+
+            Bitmap previewBmp = PatternGenerator.generate(
+                    requireContext(),
+                    patterns[i],
+                    400,
+                    false
+            );
 
             ImageView preview = new ImageView(requireContext());
             preview.setLayoutParams(new FrameLayout.LayoutParams(
@@ -194,12 +193,10 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
             item.addView(preview);
 
             TextView badge = createSelectionBadge();
-            if (currentSaved == ("pattern_" + i).hashCode())
-                badge.setVisibility(View.VISIBLE);
-
+            if (currentSaved == patternId) badge.setVisibility(View.VISIBLE);
             item.addView(badge);
 
-            int index = i;
+            int finalI = i;
 
             item.setOnClickListener(v -> {
 
@@ -207,47 +204,37 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                 badge.setVisibility(View.VISIBLE);
                 lastSelectedBadge[0] = badge;
 
-                int patternId = ("pattern_" + index).hashCode();
-                settings.setChatBackgroundRes(patternId);
+                int id = patternId;
+
+                settings.setChatBackgroundLightUri(null);
+                settings.setChatBackgroundDarkUri(null);
+
+                settings.setChatBackgroundRes(id);
+
+                Context appCtx = requireContext().getApplicationContext();
+                PatternGenerator.PatternType type = patterns[finalI];
 
                 new Thread(() -> {
+                    try {
+                        Bitmap light = PatternGenerator.generate(appCtx, type, 1400, false);
+                        Bitmap dark  = PatternGenerator.generate(appCtx, type, 1400, true);
 
-                    PatternGenerator.PatternType type =
-                            PatternResolver.getTypeFromId(patternId);
+                        Uri lightUri = WallpaperStorage.saveWallpaper(appCtx, light, "light_" + id + ".jpg");
+                        Uri darkUri  = WallpaperStorage.saveWallpaper(appCtx, dark, "dark_" + id + ".jpg");
 
-                    Bitmap light = PatternGenerator.generate(requireContext(), type, 1400);
+                        if (lightUri != null)
+                            settings.setChatBackgroundLightUri(lightUri.toString());
 
-                    Bitmap dark = PatternGenerator.generate(requireContext(), type, 1400);
-                    Canvas c = new Canvas(dark);
-                    Paint pDark = new Paint();
-                    pDark.setColor(Color.argb(130, 0, 0, 0)); // assombrissement propre
-                    c.drawRect(0, 0, dark.getWidth(), dark.getHeight(), pDark);
+                        if (darkUri != null)
+                            settings.setChatBackgroundDarkUri(darkUri.toString());
 
-                    Uri uriLight = WallpaperStorage.saveWallpaper(
-                            requireContext(),
-                            light,
-                            "wall_light.jpg"
-                    );
-
-                    Uri uriDark = WallpaperStorage.saveWallpaper(
-                            requireContext(),
-                            dark,
-                            "wall_dark.jpg"
-                    );
-
-                    if (uriLight != null)
-                        settings.setChatBackgroundLightUri(uriLight.toString());
-
-                    if (uriDark != null)
-                        settings.setChatBackgroundDarkUri(uriDark.toString());
-
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }).start();
-
                 Toast.makeText(requireContext(), R.string.save, Toast.LENGTH_SHORT).show();
-
                 dialog.dismiss();
             });
-
             grid.addView(item);
         }
 

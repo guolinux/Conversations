@@ -1,18 +1,15 @@
 package eu.siacs.conversations.ui.background;
 
 import android.content.Context;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.Path;
+import android.graphics.Paint.Style;
 import android.graphics.RadialGradient;
 import android.graphics.Shader;
-
-import java.util.Random;
 
 public class PatternGenerator {
 
@@ -20,7 +17,6 @@ public class PatternGenerator {
         SOFT_MESH,
         GRAINY_PAPER,
         DOTTED_NOISE,
-
         DIAMOND_GRID,
         FLOATING_SPHERES,
         PERLIN_LIKE_NOISE,
@@ -29,219 +25,131 @@ public class PatternGenerator {
         FIBER_TEXTURE
     }
 
-    private static final Random rnd = new Random();
-
-    public static Bitmap generate(Context ctx, PatternType type, int sizePx) {
-        Bitmap bmp = Bitmap.createBitmap(sizePx, sizePx, Config.ARGB_8888);
-        Canvas canvas = new Canvas(bmp);
-
-        boolean isDark = (ctx.getResources().getConfiguration().uiMode
-                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-
-        int base = isDark ? 18 : 245;
-        canvas.drawColor(Color.rgb(base, base, base));
-
-        int fg = isDark ? Color.argb(30, 255, 255, 255) : Color.argb(70, 0, 0, 0);
-
-        int accent = isDark ? Color.argb(20, 255, 255, 255) : Color.argb(30, 0, 0, 0);
-
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    public static Bitmap generate(Context ctx, PatternType type, int size, boolean dark) {
+        Bitmap bmp = Bitmap.createBitmap(size, size, Config.ARGB_8888);
+        Canvas c = new Canvas(bmp);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         switch (type) {
             case SOFT_MESH:
-                drawSoftMesh(canvas, sizePx, isDark);
+                int smA = dark ? 0xFF2B2B2B : 0xFFF3F6F9;
+                int smB = dark ? 0xFF1C1C1C : 0xFFE8EEF6;
+                LinearGradient lg = new LinearGradient(0, 0, size, size, smA, smB, Shader.TileMode.MIRROR);
+                p.setShader(lg);
+                c.drawRect(0, 0, size, size, p);
                 break;
 
             case GRAINY_PAPER:
-                drawGrainyPaper(canvas, sizePx, isDark);
+                c.drawColor(dark ? 0xFF171717 : 0xFFF8F8F8);
+                p.setStyle(Style.FILL);
+                p.setColor(dark ? 0x22FFFFFF : 0x22000000);
+                for (int i = 0; i < size * 6; i++) {
+                    float x = (float) (Math.random() * size);
+                    float y = (float) (Math.random() * size);
+                    c.drawCircle(x, y, (float) (Math.random() * 1.5f), p);
+                }
                 break;
 
-           case DOTTED_NOISE:
-                paint.setStyle(Paint.Style.FILL);
-                paint.setColor(fg);
-                int step = Math.max(16, sizePx / 24);
-                float radius = Math.max(1.5f, sizePx / 160f);
-                for (int x = 0; x < sizePx; x += step) {
-                    for (int y = 0; y < sizePx; y += step) {
-                        canvas.drawCircle(x + (step / 3f), y + (step / 3f), radius, paint);
+            case DOTTED_NOISE:
+                c.drawColor(dark ? 0xFF222222 : 0xFFF7F7F7);
+                p.setStyle(Style.FILL);
+                p.setColor(dark ? 0x33333333 : 0x33000000);
+                float step = Math.max(8f, size / 22f);
+                for (float y = 0; y < size; y += step) {
+                    for (float x = 0; x < size; x += step) {
+                        c.drawCircle(x + (step / 4f), y + (step / 4f), step / 8f, p);
                     }
                 }
                 break;
 
             case DIAMOND_GRID:
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setColor(accent);
-                paint.setStrokeWidth(Math.max(1f, sizePx / 600f));
-                drawDiamondGrid(canvas, sizePx, paint);
+                c.drawColor(dark ? 0xFF1E1E1E : 0xFFF9F9F9);
+                p.setStyle(Style.STROKE);
+                p.setStrokeWidth(Math.max(1f, size / 220f));
+                p.setColor(dark ? 0x22323232 : 0x22CCCCCC);
+                int stepGrid = Math.max(24, size / 12);
+                for (int i = -size; i < size * 2; i += stepGrid) {
+                    c.drawLine(i, 0, i + size, size, p);
+                    c.drawLine(i, size, i + size, 0, p);
+                }
                 break;
 
             case FLOATING_SPHERES:
-                drawFloatingSpheres(canvas, sizePx, isDark);
+                c.drawColor(dark ? 0xFF101010 : 0xFFF2F6F9);
+                for (int i = 0; i < 40; i++) {
+                    float cx = (float) (Math.random() * size);
+                    float cy = (float) (Math.random() * size);
+                    float r = (float) (size * (0.03 + Math.random() * 0.12));
+                    int col = dark ? 0x33FFFFFF : 0x22000000;
+                    RadialGradient rg = new RadialGradient(cx, cy, r, col, Color.TRANSPARENT, Shader.TileMode.CLAMP);
+                    p.setShader(rg);
+                    c.drawCircle(cx, cy, r, p);
+                    p.setShader(null);
+                }
                 break;
 
             case PERLIN_LIKE_NOISE:
-                drawPerlinLike(canvas, sizePx, isDark);
+                int a = dark ? 0xFF141414 : 0xFFF6F7F9;
+                int b = dark ? 0xFF0C0C0C : 0xFFECEFF3;
+                for (int y = 0; y < size; y++) {
+                    for (int x = 0; x < size; x++) {
+                        double v = Math.sin(x * 0.03) + Math.cos(y * 0.02);
+                        float t = (float) ((v + 2.0) / 4.0);
+                        int rr = (int) (Color.red(a) * (1 - t) + Color.red(b) * t);
+                        int gg = (int) (Color.green(a) * (1 - t) + Color.green(b) * t);
+                        int bb = (int) (Color.blue(a) * (1 - t) + Color.blue(b) * t);
+                        bmp.setPixel(x, y, Color.rgb(rr, gg, bb));
+                    }
+                }
                 break;
 
             case SOFT_GRADIENT:
-                drawSoftGradient(canvas, sizePx, isDark);
+                int s1 = dark ? 0xFF2C2C2C : 0xFFFFFFFF;
+                int s2 = dark ? 0xFF151515 : 0xFFDDE8F2;
+                Shader sh = new LinearGradient(0, 0, size, size, s1, s2, Shader.TileMode.CLAMP);
+                p.setShader(sh);
+                c.drawRect(0, 0, size, size, p);
                 break;
 
             case SCRIBBLE_PRO:
-                paint.setColor(accent);
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(Math.max(1.2f, sizePx / 480f));
-                for (int i = 0; i < sizePx / 6; i++) {
-                    float x = rnd.nextInt(sizePx);
-                    float y = rnd.nextInt(sizePx);
-                    Path path = new Path();
-                    path.moveTo(x, y);
-                    for (int k = 0; k < 4; k++) {
-                        path.rQuadTo(rnd.nextInt(40) - 20, rnd.nextInt(30) - 15, rnd.nextInt(40) - 20, rnd.nextInt(30) - 15);
-                    }
-                    canvas.drawPath(path, paint);
+                c.drawColor(dark ? 0xFF1B1B1B : 0xFFF8FBFD);
+                p.setStyle(Style.STROKE);
+                p.setStrokeWidth(Math.max(1f, size / 200f));
+                p.setColor(dark ? 0x22777777 : 0x22000000);
+                for (int i = 0; i < 60; i++) {
+                    float x1 = (float) (Math.random() * size);
+                    float y1 = (float) (Math.random() * size);
+                    float x2 = x1 + (float) (Math.random() * size / 6 - size / 12);
+                    float y2 = y1 + (float) (Math.random() * size / 6 - size / 12);
+                    c.drawLine(x1, y1, x2, y2, p);
                 }
                 break;
 
             case FIBER_TEXTURE:
-                drawFiberTexture(canvas, sizePx, isDark);
+                c.drawColor(dark ? 0xFF111111 : 0xFFF7F8F9);
+                p.setStyle(Style.STROKE);
+                p.setStrokeWidth(1f);
+                p.setColor(dark ? 0x22333333 : 0x22000000);
+                for (int i = 0; i < size / 2; i++) {
+                    float x = (float) (Math.random() * size);
+                    float y = (float) (Math.random() * size);
+                    float l = (float) (4 + Math.random() * 40);
+                    float aAng = (float) (Math.random() * Math.PI * 2);
+                    c.drawLine(x, y, x + (float) Math.cos(aAng) * l, y + (float) Math.sin(aAng) * l, p);
+                }
+                break;
+
+            default:
+                c.drawColor(dark ? 0xFF1E1E1E : 0xFFF4F4F4);
                 break;
         }
 
+        if (dark) {
+            Paint overlay = new Paint();
+            overlay.setColor(Color.argb(60, 0, 0, 0));
+            c.drawRect(0, 0, size, size, overlay);
+        }
+
         return bmp;
-    }
-
-
-    private static void drawSoftMesh(Canvas canvas, int sizePx, boolean isDark) {
-        int c1 = isDark ? Color.rgb(20, 30, 40) : Color.rgb(245, 250, 255);
-        int c2 = isDark ? Color.rgb(30, 40, 50) : Color.rgb(230, 240, 250);
-        int c3 = isDark ? Color.rgb(24, 34, 44) : Color.rgb(250, 245, 240);
-
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        Shader lg = new LinearGradient(0, 0, sizePx, sizePx,
-                new int[]{c1, c2, c3}, new float[]{0f, 0.6f, 1f}, Shader.TileMode.CLAMP);
-
-        p.setShader(lg);
-        canvas.drawRect(0, 0, sizePx, sizePx, p);
-
-        p.setShader(null);
-        p.setColor(isDark ? Color.argb(25, 255, 255, 255) : Color.argb(18, 0, 0, 0));
-        for (int i = 0; i < 12; i++) {
-            float cx = rnd.nextInt(sizePx);
-            float cy = rnd.nextInt(sizePx);
-            float r = rnd.nextInt(sizePx / 3) + sizePx / 10f;
-            canvas.drawCircle(cx, cy, r, p);
-        }
-    }
-
-    private static void drawGrainyPaper(Canvas canvas, int sizePx, boolean isDark) {
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        int base = isDark ? Color.rgb(18, 18, 18) : Color.rgb(250, 248, 244);
-        canvas.drawColor(base);
-
-        for (int pass = 0; pass < 3; pass++) {
-            int density = sizePx * (pass + 1) / 3;
-            for (int i = 0; i < density; i++) {
-                p.setColor(isDark
-                        ? Color.argb(rnd.nextInt(40), 255, 255, 255)
-                        : Color.argb(rnd.nextInt(60), 0, 0, 0));
-                float x = rnd.nextFloat() * sizePx;
-                float y = rnd.nextFloat() * sizePx;
-                canvas.drawCircle(x, y, rnd.nextFloat() * 1.4f + 0.3f, p);
-            }
-        }
-
-        p.setColor(isDark ? Color.argb(18, 255, 255, 255) : Color.argb(12, 0, 0, 0));
-        for (int i = 0; i < 8; i++) {
-            float cx = rnd.nextFloat() * sizePx;
-            float cy = rnd.nextFloat() * sizePx;
-            float r = sizePx * (0.06f + rnd.nextFloat() * 0.12f);
-            canvas.drawCircle(cx, cy, r, p);
-        }
-    }
-    private static void drawDiamondGrid(Canvas canvas, int sizePx, Paint paint) {
-        float step = Math.max(40, sizePx / 12f);
-        for (float x = -sizePx; x < sizePx * 2; x += step) {
-            for (float y = -sizePx; y < sizePx * 2; y += step) {
-                Path path = new Path();
-                float cx = x, cy = y;
-                path.moveTo(cx, cy - step / 2);
-                path.lineTo(cx + step / 2, cy);
-                path.lineTo(cx, cy + step / 2);
-                path.lineTo(cx - step / 2, cy);
-                path.close();
-                canvas.drawPath(path, paint);
-            }
-        }
-    }
-
-    private static void drawFloatingSpheres(Canvas canvas, int sizePx, boolean isDark) {
-        int count = Math.max(6, sizePx / 80);
-        for (int i = 0; i < count; i++) {
-            float cx = rnd.nextFloat() * sizePx;
-            float cy = rnd.nextFloat() * sizePx;
-            float r = sizePx * (0.08f + rnd.nextFloat() * 0.18f);
-
-            RadialGradient rg = new RadialGradient(cx, cy, r,
-                    (isDark ? Color.argb(25, 255, 255, 255) : Color.argb(30, 0, 0, 0)),
-                    Color.argb(0, 0, 0, 0), Shader.TileMode.CLAMP);
-
-            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-            p.setShader(rg);
-            canvas.drawCircle(cx, cy, r, p);
-        }
-    }
-
-    private static void drawPerlinLike(Canvas canvas, int sizePx, boolean isDark) {
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        for (int layer = 0; layer < 5; layer++) {
-            int dots = sizePx * (10 + layer * 10);
-            for (int i = 0; i < dots; i++) {
-                p.setColor(isDark ? Color.argb(rnd.nextInt(28), 255, 255, 255) :
-                        Color.argb(rnd.nextInt(38), 0, 0, 0));
-                float x = rnd.nextFloat() * sizePx;
-                float y = rnd.nextFloat() * sizePx;
-                float r = (layer + 1) * (rnd.nextFloat() * 1.5f);
-                canvas.drawCircle(x, y, r, p);
-            }
-        }
-
-        Paint v = new Paint(Paint.ANTI_ALIAS_FLAG);
-        int overlay = isDark ? Color.argb(24, 0, 0, 0) : Color.argb(18, 255, 255, 255);
-        v.setColor(overlay);
-        canvas.drawRect(0, 0, sizePx, sizePx, v);
-    }
-
-    private static void drawSoftGradient(Canvas canvas, int sizePx, boolean isDark) {
-        int c1 = isDark ? Color.rgb(20, 24, 30) : Color.rgb(250, 252, 255);
-        int c2 = isDark ? Color.rgb(30, 40, 50) : Color.rgb(240, 246, 250);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        Shader lg = new LinearGradient(0, 0, sizePx, sizePx, c1, c2, Shader.TileMode.CLAMP);
-        p.setShader(lg);
-        canvas.drawRect(0, 0, sizePx, sizePx, p);
-
-        p.setShader(null);
-        p.setColor(isDark ? Color.argb(18, 255, 255, 255) : Color.argb(12, 0, 0, 0));
-        for (int i = 0; i < sizePx / 2; i++) {
-            float x = rnd.nextFloat() * sizePx;
-            float y = rnd.nextFloat() * sizePx;
-            canvas.drawCircle(x, y, rnd.nextFloat() * 1.4f, p);
-        }
-    }
-
-    private static void drawFiberTexture(Canvas canvas, int sizePx, boolean isDark) {
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        int strokes = sizePx * 8;
-        for (int i = 0; i < strokes; i++) {
-            int x = rnd.nextInt(sizePx);
-            int y = rnd.nextInt(sizePx);
-            p.setColor(isDark ? Color.argb(18, 255, 255, 255) : Color.argb(20, 0, 0, 0));
-            float len = 8 + rnd.nextFloat() * 16;
-            float angle = (float) (rnd.nextFloat() * Math.PI * 2);
-            float x2 = x + (float) Math.cos(angle) * len;
-            float y2 = y + (float) Math.sin(angle) * len;
-            p.setStrokeWidth(1f);
-            canvas.drawLine(x, y, x2, y2, p);
-        }
     }
 }

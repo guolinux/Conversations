@@ -412,7 +412,7 @@ public class AppSettings {
         PreferenceManager.getDefaultSharedPreferences(context)
                 .edit()
                 .putInt("chat_background_res", resId)
-                .remove("chat_background_uri")
+                .putString("chat_background_uri", null)
                 .apply();
     }
 
@@ -420,11 +420,11 @@ public class AppSettings {
         return PreferenceManager.getDefaultSharedPreferences(context)
                 .getInt("chat_background_res", -1);
     }
+
     public void setChatBackgroundUri(String uri) {
         PreferenceManager.getDefaultSharedPreferences(context)
                 .edit()
                 .putString("chat_background_uri", uri)
-                .remove("chat_background_res")
                 .apply();
     }
 
@@ -432,32 +432,12 @@ public class AppSettings {
         return PreferenceManager.getDefaultSharedPreferences(context)
                 .getString("chat_background_uri", null);
     }
-    public void setSelectedPatternName(String name) {
-        PreferenceManager.getDefaultSharedPreferences(context)
-                .edit()
-                .putString("chat_background_pattern_name", name)
-                .apply();
-    }
-    @Nullable
-    public String getSelectedPatternName() {
-        return PreferenceManager.getDefaultSharedPreferences(context)
-                .getString("chat_background_pattern_name", null);
-    }
-    public void clearChatBackground() {
-        PreferenceManager.getDefaultSharedPreferences(context)
-                .edit()
-                .remove("chat_background_pattern_name")
-                .remove("chat_background_uri")
-                .remove("bg_light_uri")
-                .remove("bg_dark_uri")
-                .apply();
-    }
+
     public void setChatBackgroundLightUri(String uri) {
-        clearChatBackground();
         PreferenceManager.getDefaultSharedPreferences(context)
                 .edit()
-                .putString("chat_background_uri", uri)
-                .putString("bg_light_uri", uri).apply();
+                .putString("bg_light_uri", uri)
+                .apply();
     }
 
     public String getChatBackgroundLightUri() {
@@ -466,15 +446,15 @@ public class AppSettings {
     }
 
     public void setChatBackgroundDarkUri(String uri) {
-        clearChatBackground();
         PreferenceManager.getDefaultSharedPreferences(context)
                 .edit()
-                .putString("chat_background_uri", uri)
-                .putString("bg_dark_uri", uri).apply();
+                .putString("bg_dark_uri", uri)
+                .apply();
     }
 
     public String getChatBackgroundDarkUri() {
         return PreferenceManager.getDefaultSharedPreferences(context)
                 .getString("bg_dark_uri", null);
     }
+
 }

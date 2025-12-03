@@ -1321,6 +1321,7 @@ public class ConversationFragment extends XmppFragment
         this.binding.textinput.setCustomInsertionActionModeCallback(
                 new EditMessageActionModeCallback(this.binding.textinput));
 
+        View root = binding.getRoot();
         applyChatBackground();
 
         return binding.getRoot();
@@ -2234,6 +2235,7 @@ public class ConversationFragment extends XmppFragment
     public void onResume() {
         super.onResume();
         binding.messagesView.post(this::fireReadEvent);
+        View root = binding.getRoot();
         applyChatBackground();
     }
 
@@ -3889,68 +3891,85 @@ public class ConversationFragment extends XmppFragment
     }
     private void applyChatBackground() {
 
-        if (binding == null) return;
+        View bgView = binding.chatBackground;
+        if (bgView == null) return;
 
-        View bg = binding.chatBackground;
         AppSettings settings = new AppSettings(requireContext());
 
         String uriLight = settings.getChatBackgroundLightUri();
         String uriDark  = settings.getChatBackgroundDarkUri();
-        String bgUri = settings.getChatBackgroundUri();
+        String bgUri    = settings.getChatBackgroundUri();
+        int patternId   = settings.getChatBackgroundRes();
 
-        int mode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        int night = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        boolean isDark = (night == Configuration.UI_MODE_NIGHT_YES);
 
-        String selectedUri =
-                (mode == Configuration.UI_MODE_NIGHT_YES) ? uriDark : uriLight;
-
-        if (selectedUri == null) {
-            bg.setBackground(null);
+        if (patternId == -1 && uriLight == null && uriDark == null && bgUri == null && bgUri.isEmpty()) {
+            bgView.setBackground(null);
             return;
         }
 
-        try {
-            if (bgUri != null && !bgUri.isEmpty()) {
-                selectedUri = bgUri;
+        String activeUri = isDark ? uriDark : uriLight;
+
+        if (bgUri != null && !bgUri.isEmpty()) {
+            activeUri = bgUri;
+        }
+
+        if (activeUri != null && !activeUri.isEmpty()) {
+            try {
+                Uri uri = Uri.parse(activeUri);
+                InputStream is = requireContext().getContentResolver().openInputStream(uri);
+
+                if (is != null) {
+                    Bitmap bmp = BitmapFactory.decodeStream(is);
+                    Drawable d = new BitmapDrawable(getResources(), bmp);
+
+                    applyTilingIfNeeded(d, bgUri);
+                    bgView.setBackground(d);
+                    return;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+        }
 
-            InputStream in = requireContext().getContentResolver().openInputStream(Uri.parse(selectedUri));
-            Bitmap bmp = BitmapFactory.decodeStream(in);
-            bg.setBackground(new BitmapDrawable(getResources(), bmp));
+        if (patternId != -1) {
+            PatternGenerator.PatternType type = PatternResolver.getTypeFromId(patternId);
 
-            Drawable bgs = bg.getBackground();
-            if (bg == null) return;
-
-            DisplayMetrics metrics = getResources().getDisplayMetrics();
-            Configuration config = getResources().getConfiguration();
-
-            int orientation = config.orientation;
-            float dpWidth = metrics.widthPixels / metrics.density;
-
-            boolean isUserWallpaper = (settings.getChatBackgroundUri() != null);
-
-            if (bgs instanceof BitmapDrawable bitmapDrawable) {
-
-                bitmapDrawable.setDither(true);
-                bitmapDrawable.setFilterBitmap(true);
-
-                if (isUserWallpaper) {
-                    bitmapDrawable.setTileModeXY(null, null);
-                    bitmapDrawable.setGravity(Gravity.CENTER);
-                } else {
-                    boolean isLargeScreen = dpWidth >= 500;
-                    boolean isLandscape   = orientation == Configuration.ORIENTATION_LANDSCAPE;
-
-                    if (isLargeScreen || isLandscape) {
-                        bitmapDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-                    } else {
-                        bitmapDrawable.setTileModeXY(null, null);
-                    }
+            if (type != null) {
+                Bitmap bmp = PatternGenerator.generate(
+                        requireContext(),
+                        type,
+                        1400,
+                        isDark
+                );
+                if (bmp != null) {
+                    Drawable d = new BitmapDrawable(getResources(), bmp);
+                    applyTilingIfNeeded(d, bgUri);
+                    bgView.setBackground(d);
+                    return;
                 }
             }
+        }
 
+        bgView.setBackground(null);
+    }
+    private void applyTilingIfNeeded(Drawable d, String bgUri) {
 
-        } catch (Exception e) {
-            bg.setBackground(null);
+        if (!(d instanceof BitmapDrawable)) return;
+
+        BitmapDrawable bd = (BitmapDrawable) d;
+        bd.setDither(true);
+
+        float dpWidth = getResources().getDisplayMetrics().widthPixels /
+                getResources().getDisplayMetrics().density;
+
+        boolean isLandscape = getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_LANDSCAPE;
+
+        if (dpWidth > 600 || isLandscape) {
+            if (bgUri == null && bgUri.isEmpty())
+                bd.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
         }
     }
 }
