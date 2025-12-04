@@ -4,11 +4,13 @@ import static eu.siacs.conversations.ui.background.PatternGenerator.PatternType.
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -163,7 +165,13 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
 
             dialog.dismiss();
         });
-
+        boolean isDarkMode = (
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES
+        );
+        DisplayMetrics metrics = requireContext().getResources().getDisplayMetrics();
+        int width = metrics.widthPixels;
+        int height = metrics.heightPixels;
         for (int i = 0; i < patterns.length; i++) {
 
             FrameLayout item = new FrameLayout(requireContext());
@@ -180,7 +188,7 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                     requireContext(),
                     patterns[i],
                     400,
-                    false
+                    isDarkMode
             );
 
             ImageView preview = new ImageView(requireContext());
@@ -216,8 +224,8 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
 
                 new Thread(() -> {
                     try {
-                        Bitmap light = PatternGenerator.generate(appCtx, type, 1400, false);
-                        Bitmap dark  = PatternGenerator.generate(appCtx, type, 1400, true);
+                        Bitmap light = PatternGenerator.generate(appCtx, type, Math.max(width, height), false);
+                        Bitmap dark  = PatternGenerator.generate(appCtx, type, Math.max(width, height), true);
 
                         Uri lightUri = WallpaperStorage.saveWallpaper(appCtx, light, "light_" + id + ".jpg");
                         Uri darkUri  = WallpaperStorage.saveWallpaper(appCtx, dark, "dark_" + id + ".jpg");
