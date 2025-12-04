@@ -33,7 +33,7 @@ public class PatternGenerator {
         switch (type) {
             case SOFT_MESH:
                 int smA = dark ? 0xFF2B2B2B : 0xFFF3F6F9;
-                int smB = dark ? 0xFF1C1C1C : 0xFFE8EEF6;
+                int smB = dark ? 0x33FFFFFF : 0xFFE8EEF6;
                 LinearGradient lg = new LinearGradient(0, 0, size, size, smA, smB, Shader.TileMode.MIRROR);
                 p.setShader(lg);
                 c.drawRect(0, 0, size, size, p);
@@ -42,7 +42,7 @@ public class PatternGenerator {
             case GRAINY_PAPER:
                 c.drawColor(dark ? 0xFF171717 : 0xFFF8F8F8);
                 p.setStyle(Style.FILL);
-                p.setColor(dark ? 0x22FFFFFF : 0x22000000);
+                p.setColor(dark ? 0x33FFFFFF : 0x22000000);
                 for (int i = 0; i < size * 6; i++) {
                     float x = (float) (Math.random() * size);
                     float y = (float) (Math.random() * size);
@@ -53,7 +53,7 @@ public class PatternGenerator {
             case DOTTED_NOISE:
                 c.drawColor(dark ? 0xFF222222 : 0xFFF7F7F7);
                 p.setStyle(Style.FILL);
-                p.setColor(dark ? 0x33333333 : 0x33000000);
+                p.setColor(dark ? 0x33FFFFFF : 0x33000000);
                 float step = Math.max(8f, size / 22f);
                 for (float y = 0; y < size; y += step) {
                     for (float x = 0; x < size; x += step) {
@@ -66,7 +66,7 @@ public class PatternGenerator {
                 c.drawColor(dark ? 0xFF1E1E1E : 0xFFF9F9F9);
                 p.setStyle(Style.STROKE);
                 p.setStrokeWidth(Math.max(1f, size / 220f));
-                p.setColor(dark ? 0x22323232 : 0x22CCCCCC);
+                p.setColor(dark ? 0x33FFFFFF : 0x22CCCCCC);
                 int stepGrid = Math.max(24, size / 12);
                 for (int i = -size; i < size * 2; i += stepGrid) {
                     c.drawLine(i, 0, i + size, size, p);
@@ -90,7 +90,7 @@ public class PatternGenerator {
 
             case PERLIN_LIKE_NOISE:
                 int a = dark ? 0xFF141414 : 0xFFF6F7F9;
-                int b = dark ? 0xFF0C0C0C : 0xFFECEFF3;
+                int b = dark ? 0x33FFFFFF : 0xFFECEFF3;
                 for (int y = 0; y < size; y++) {
                     for (int x = 0; x < size; x++) {
                         double v = Math.sin(x * 0.03) + Math.cos(y * 0.02);
@@ -105,7 +105,7 @@ public class PatternGenerator {
 
             case SOFT_GRADIENT:
                 int s1 = dark ? 0xFF2C2C2C : 0xFFFFFFFF;
-                int s2 = dark ? 0xFF151515 : 0xFFDDE8F2;
+                int s2 = dark ? 0x33FFFFFF : 0xFFDDE8F2;
                 Shader sh = new LinearGradient(0, 0, size, size, s1, s2, Shader.TileMode.CLAMP);
                 p.setShader(sh);
                 c.drawRect(0, 0, size, size, p);
@@ -115,7 +115,7 @@ public class PatternGenerator {
                 c.drawColor(dark ? 0xFF1B1B1B : 0xFFF8FBFD);
                 p.setStyle(Style.STROKE);
                 p.setStrokeWidth(Math.max(1f, size / 200f));
-                p.setColor(dark ? 0x22777777 : 0x22000000);
+                p.setColor(dark ? 0x33FFFFFF : 0x22000000);
                 for (int i = 0; i < 60; i++) {
                     float x1 = (float) (Math.random() * size);
                     float y1 = (float) (Math.random() * size);
@@ -129,7 +129,7 @@ public class PatternGenerator {
                 c.drawColor(dark ? 0xFF111111 : 0xFFF7F8F9);
                 p.setStyle(Style.STROKE);
                 p.setStrokeWidth(1f);
-                p.setColor(dark ? 0x22333333 : 0x22000000);
+                p.setColor(dark ? 0x33FFFFFF : 0x22000000);
                 for (int i = 0; i < size / 2; i++) {
                     float x = (float) (Math.random() * size);
                     float y = (float) (Math.random() * size);
