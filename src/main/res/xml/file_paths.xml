@@ -18,4 +18,11 @@
     <cache-path
         name="recordings"
         path="Recordings" />
+        path="Camera/"/>
+    <files-path
+        name="generated_wallpapers"
+        path="wallpapers/" />
+    <files-path
+        name="generated_wallpapers"
+        path="wallpapers/" />
 </paths>

@@ -127,15 +127,13 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         final TextView[] lastSelectedBadge = {null};
 
         final PatternGenerator.PatternType[] patterns = {
+                SOFT_GRADIENT,
+                RADIAL_GRADIENT,
                 SOFT_MESH,
                 GRAINY_PAPER,
-                DOTTED_NOISE,
-                DIAMOND_GRID,
                 FLOATING_SPHERES,
-                PERLIN_LIKE_NOISE,
-                SOFT_GRADIENT,
                 SCRIBBLE_PRO,
-                FIBER_TEXTURE
+                PLASMA
         };
 
         int screenWidth = getResources().getDisplayMetrics().widthPixels;

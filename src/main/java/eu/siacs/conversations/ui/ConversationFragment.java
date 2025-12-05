@@ -3919,11 +3919,8 @@ public class ConversationFragment extends XmppFragment
         }
 
         if (patternId != -1) {
-            PatternGenerator.PatternType type = PatternResolver.getTypeFromId(patternId);
-            if (type != null) {
-                generatePatternAsync(type, bgView, isDark);
-                return;
-            }
+            loadGeneratedPattern(patternId, bgView, isDark);
+            return;
         }
 
         bgView.setImageDrawable(null);
@@ -3945,26 +3942,50 @@ public class ConversationFragment extends XmppFragment
             e.printStackTrace();
         }
     }
-    private void generatePatternAsync(
-            PatternGenerator.PatternType type,
-            ImageView bgView,
-            boolean isDark
-    ) {
+
+    private void loadGeneratedPattern(int patternId, ImageView bgView, boolean isDark) {
+
+        Context ctx = requireContext();
+        AppSettings settings = new AppSettings(ctx);
+
+        String savedUriString = isDark
+                ? settings.getChatBackgroundDarkUri()
+                : settings.getChatBackgroundLightUri();
+
+        Uri savedUri = (savedUriString != null && !savedUriString.isEmpty())
+                ? Uri.parse(savedUriString)
+                : null;
+
+        if (savedUri != null) {
+            loadBitmapIntoView(savedUri, bgView);
+            return;
+        }
+
         new Thread(() -> {
-            try {
-                DisplayMetrics dm = getResources().getDisplayMetrics();
-                int size = Math.max(dm.widthPixels, dm.heightPixels);
 
-                Bitmap bmp = PatternGenerator.generate(requireContext(), type, size, isDark);
+            DisplayMetrics dm = ctx.getResources().getDisplayMetrics();
+            int size = Math.max(dm.widthPixels, dm.heightPixels);
 
-                requireActivity().runOnUiThread(() -> {
-                    bgView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    bgView.setImageBitmap(bmp);
-                });
+            PatternGenerator.PatternType type =
+                    PatternResolver.getTypeFromId(patternId);
 
-            } catch (Exception e) {
-                e.printStackTrace();
+            Bitmap bmp = PatternGenerator.generate(ctx, type, size, isDark);
+
+            String fileName = "pattern_" + patternId + (isDark ? "_dark" : "_light");
+
+            Uri uri = WallpaperStorage.saveWallpaper(ctx, bmp, fileName);
+
+            if (uri != null) {
+                if (isDark)
+                    settings.setChatBackgroundDarkUri(uri.toString());
+                else
+                    settings.setChatBackgroundLightUri(uri.toString());
             }
+
+            requireActivity().runOnUiThread(() ->
+                    loadBitmapIntoView(uri, bgView)
+            );
+
         }).start();
     }
 
