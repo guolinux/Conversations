@@ -63,6 +63,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.GridLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
@@ -3891,85 +3892,80 @@ public class ConversationFragment extends XmppFragment
     }
     private void applyChatBackground() {
 
-        View bgView = binding.chatBackground;
+        ImageView bgView = binding.chatBackgroundImage;
         if (bgView == null) return;
 
         AppSettings settings = new AppSettings(requireContext());
 
         String uriLight = settings.getChatBackgroundLightUri();
         String uriDark  = settings.getChatBackgroundDarkUri();
-        String bgUri    = settings.getChatBackgroundUri();
+        String oldUri   = settings.getChatBackgroundUri();
         int patternId   = settings.getChatBackgroundRes();
 
         int night = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         boolean isDark = (night == Configuration.UI_MODE_NIGHT_YES);
 
-        if (patternId == -1 && uriLight == null && uriDark == null && bgUri == null && bgUri.isEmpty()) {
-            bgView.setBackground(null);
+
+        if (oldUri != null && !oldUri.isEmpty()) {
+            loadBitmapIntoView(Uri.parse(oldUri), bgView);
             return;
         }
 
         String activeUri = isDark ? uriDark : uriLight;
 
-        if (bgUri != null && !bgUri.isEmpty()) {
-            activeUri = bgUri;
-        }
-
         if (activeUri != null && !activeUri.isEmpty()) {
-            try {
-                Uri uri = Uri.parse(activeUri);
-                InputStream is = requireContext().getContentResolver().openInputStream(uri);
-
-                if (is != null) {
-                    Bitmap bmp = BitmapFactory.decodeStream(is);
-                    Drawable d = new BitmapDrawable(getResources(), bmp);
-
-                    applyTilingIfNeeded(d, bgUri);
-                    bgView.setBackground(d);
-                    return;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            loadBitmapIntoView(Uri.parse(activeUri), bgView);
+            return;
         }
 
         if (patternId != -1) {
             PatternGenerator.PatternType type = PatternResolver.getTypeFromId(patternId);
-
             if (type != null) {
-                Bitmap bmp = PatternGenerator.generate(
-                        requireContext(),
-                        type,
-                        1400,
-                        isDark
-                );
-                if (bmp != null) {
-                    Drawable d = new BitmapDrawable(getResources(), bmp);
-                    applyTilingIfNeeded(d, bgUri);
-                    bgView.setBackground(d);
-                    return;
-                }
+                generatePatternAsync(type, bgView, isDark);
+                return;
             }
         }
 
-        bgView.setBackground(null);
+        bgView.setImageDrawable(null);
     }
-    private void applyTilingIfNeeded(Drawable d, String bgUri) {
 
-        if (!(d instanceof BitmapDrawable)) return;
+    private void loadBitmapIntoView(Uri uri, ImageView bgView) {
+        try {
+            InputStream is = requireContext().getContentResolver().openInputStream(uri);
+            if (is != null) {
+                Bitmap bmp = BitmapFactory.decodeStream(is);
+                is.close();
 
-        BitmapDrawable bd = (BitmapDrawable) d;
-        bd.setDither(true);
-
-        float dpWidth = getResources().getDisplayMetrics().widthPixels /
-                getResources().getDisplayMetrics().density;
-
-        boolean isLandscape = getResources().getConfiguration().orientation
-                == Configuration.ORIENTATION_LANDSCAPE;
-
-        if (dpWidth > 600 || isLandscape) {
-            if (bgUri == null && bgUri.isEmpty())
-                bd.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+                if (bmp != null) {
+                    bgView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    bgView.setImageBitmap(bmp);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
+    private void generatePatternAsync(
+            PatternGenerator.PatternType type,
+            ImageView bgView,
+            boolean isDark
+    ) {
+        new Thread(() -> {
+            try {
+                DisplayMetrics dm = getResources().getDisplayMetrics();
+                int size = Math.max(dm.widthPixels, dm.heightPixels);
+
+                Bitmap bmp = PatternGenerator.generate(requireContext(), type, size, isDark);
+
+                requireActivity().runOnUiThread(() -> {
+                    bgView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    bgView.setImageBitmap(bmp);
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
 }
