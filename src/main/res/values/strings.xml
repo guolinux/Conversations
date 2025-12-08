@@ -1147,6 +1147,8 @@
     <string name="pref_use_relays">Always use relays</string>
     <string name="pref_use_relays_summary">Relay all P2P connections (calls and file transfers) through your server to avoid revealing your IP address.</string>
     <string name="mobile_ticket">Mobile ticket</string>
+    <string name="change_theme">Choose a theme</string>
+    <string name="chat_background_title">Chat wallpaper</string>
     <string name="emoji_reactions">Emoji reactions</string>
     <string name="open_keyboard">Open keyboard</string>
     <string name="qr_code_actions">Scan QR, Show QR, Server invite</string>
