@@ -150,7 +150,7 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         grid.addView(noWallpaperItem);
 
         TextView badgeNone = createSelectionBadge();
-        if (currentSaved == -1) badgeNone.setVisibility(View.VISIBLE);
+        if (currentSaved == -1 || settings.getChatBackgroundUri() != null) badgeNone.setVisibility(View.VISIBLE);
         noWallpaperItem.addView(badgeNone);
 
         noWallpaperItem.setOnClickListener(v -> {
@@ -158,6 +158,7 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
             badgeNone.setVisibility(View.VISIBLE);
             lastSelectedBadge[0] = badgeNone;
 
+            settings.clearChatBackground();
             settings.setChatBackgroundRes(-1);
             settings.setChatBackgroundUri(null);
 
@@ -199,7 +200,7 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
             item.addView(preview);
 
             TextView badge = createSelectionBadge();
-            if (currentSaved == patternId) badge.setVisibility(View.VISIBLE);
+            if (currentSaved == patternId && settings.getChatBackgroundUri() == null) badge.setVisibility(View.VISIBLE);
             item.addView(badge);
 
             int finalI = i;

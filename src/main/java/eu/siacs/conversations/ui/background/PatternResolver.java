@@ -14,15 +14,6 @@ public class PatternResolver {
             PLASMA
     };
 
-    public static int getIdForType(PatternGenerator.PatternType type) {
-        for (int i = 0; i < PATTERNS.length; i++) {
-            if (PATTERNS[i] == type) {
-                return ("pattern_" + i).hashCode();
-            }
-        }
-        return -1;
-    }
-
     public static PatternGenerator.PatternType getTypeFromId(int id) {
         for (int i = 0; i < PATTERNS.length; i++) {
             if (id == ("pattern_" + i).hashCode()) {

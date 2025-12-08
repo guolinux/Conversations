@@ -3905,6 +3905,14 @@ public class ConversationFragment extends XmppFragment
         int night = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         boolean isDark = (night == Configuration.UI_MODE_NIGHT_YES);
 
+        if (settings.getChatBackgroundRes() == -1
+                && settings.getChatBackgroundUri() == null
+                && settings.getChatBackgroundLightUri() == null
+                && settings.getChatBackgroundDarkUri() == null) {
+
+            bgView.setBackground(null);
+            return;
+        }
 
         if (oldUri != null && !oldUri.isEmpty()) {
             loadBitmapIntoView(Uri.parse(oldUri), bgView);

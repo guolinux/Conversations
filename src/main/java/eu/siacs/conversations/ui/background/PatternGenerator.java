@@ -168,7 +168,7 @@ public class PatternGenerator {
 
     private static void drawSoftMesh(Canvas c, int size, boolean dark) {
 
-        drawSoftGradient(c, size, dark); // fond
+        drawSoftGradient(c, size, dark);
 
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setColor(dark ? 0x10FFFFFF : 0x22000000);

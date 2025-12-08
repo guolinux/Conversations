@@ -457,4 +457,14 @@ public class AppSettings {
                 .getString("bg_dark_uri", null);
     }
 
+    public void clearChatBackground() {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .remove("chat_background_uri")
+                .remove("chat_background_res")
+                .remove("bg_light_uri")
+                .remove("bg_dark_uri")
+                .apply();
+    }
+
 }
