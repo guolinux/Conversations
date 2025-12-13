@@ -3936,21 +3936,38 @@ public class ConversationFragment extends XmppFragment
 
     private void loadBitmapIntoView(Uri uri, ImageView bgView) {
         try {
-            InputStream is = requireContext().getContentResolver().openInputStream(uri);
-            if (is != null) {
-                Bitmap bmp = BitmapFactory.decodeStream(is);
-                is.close();
+            Context ctx = requireContext();
 
-                if (bmp != null) {
-                    bgView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    bgView.setImageBitmap(bmp);
-                }
+            DisplayMetrics dm = ctx.getResources().getDisplayMetrics();
+            int reqWidth  = dm.widthPixels;
+            int reqHeight = dm.heightPixels;
+
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = true;
+
+            try (InputStream bounds = ctx.getContentResolver().openInputStream(uri)) {
+                BitmapFactory.decodeStream(bounds, null, opts);
             }
+
+            opts.inSampleSize = calculateInSampleSize(opts, reqWidth, reqHeight);
+            opts.inJustDecodeBounds = false;
+            opts.inPreferredConfig = Bitmap.Config.RGB_565;
+            opts.inDither = false;
+
+            Bitmap bmp;
+            try (InputStream is = ctx.getContentResolver().openInputStream(uri)) {
+                bmp = BitmapFactory.decodeStream(is, null, opts);
+            }
+
+            if (bmp != null) {
+                bgView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                bgView.setImageBitmap(bmp);
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
     private void loadGeneratedPattern(int patternId, ImageView bgView, boolean isDark) {
 
         Context ctx = requireContext();
@@ -3995,6 +4012,23 @@ public class ConversationFragment extends XmppFragment
             );
 
         }).start();
+    }
+
+    private int calculateInSampleSize(
+            BitmapFactory.Options options,
+            int reqWidth,
+            int reqHeight) {
+
+        int height = options.outHeight;
+        int width = options.outWidth;
+        int inSampleSize = 1;
+
+        while ((height / inSampleSize) > reqHeight
+                || (width / inSampleSize) > reqWidth) {
+            inSampleSize *= 2;
+        }
+
+        return inSampleSize;
     }
 
 }

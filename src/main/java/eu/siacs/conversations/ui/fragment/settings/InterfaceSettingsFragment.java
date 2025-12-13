@@ -47,7 +47,15 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                         );
 
                         AppSettings settings = new AppSettings(requireContext());
-                        settings.setChatBackgroundUri(uri.toString());
+                        Uri resized = WallpaperStorage.saveUserWallpaper(
+                                requireContext(),
+                                uri,
+                                "user_bg"
+                        );
+
+                        if (resized != null) {
+                            settings.setChatBackgroundUri(resized.toString());
+                        }
 
                         Toast.makeText(requireContext(), R.string.save, Toast.LENGTH_SHORT).show();
 
@@ -129,11 +137,12 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         final PatternGenerator.PatternType[] patterns = {
                 SOFT_GRADIENT,
                 RADIAL_GRADIENT,
+                SILK_GRADIENT,
                 SOFT_MESH,
-                GRAINY_PAPER,
+                CALM_GRID,
                 FLOATING_SPHERES,
-                SCRIBBLE_PRO,
-                PLASMA
+                ROUNDED_BLOBS,
+                FROSTED_NOISE
         };
 
         int screenWidth = getResources().getDisplayMetrics().widthPixels;

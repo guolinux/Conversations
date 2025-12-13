@@ -7,11 +7,12 @@ public class PatternResolver {
     public static final PatternGenerator.PatternType[] PATTERNS = new PatternGenerator.PatternType[] {
             SOFT_GRADIENT,
             RADIAL_GRADIENT,
+            SILK_GRADIENT,
             SOFT_MESH,
-            GRAINY_PAPER,
+            CALM_GRID,
             FLOATING_SPHERES,
-            SCRIBBLE_PRO,
-            PLASMA
+            ROUNDED_BLOBS,
+            FROSTED_NOISE
     };
 
     public static PatternGenerator.PatternType getTypeFromId(int id) {

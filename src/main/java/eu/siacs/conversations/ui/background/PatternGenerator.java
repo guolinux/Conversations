@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.Shader;
 
@@ -16,16 +17,16 @@ public class PatternGenerator {
     public enum PatternType {
         SOFT_GRADIENT,
         RADIAL_GRADIENT,
+        SILK_GRADIENT,
         SOFT_MESH,
-        GRAINY_PAPER,
+        CALM_GRID,
         FLOATING_SPHERES,
-        SCRIBBLE_PRO,
-        PLASMA
+        ROUNDED_BLOBS,
+        FROSTED_NOISE
     }
-
     private static final Random random = new Random();
 
-    public static Bitmap generate(Context ctx, PatternType type, int size, boolean isDark) {
+    public static Bitmap generate(Context ctx, PatternType type, int size, boolean dark) {
 
         Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bmp);
@@ -33,32 +34,37 @@ public class PatternGenerator {
         switch (type) {
 
             case SOFT_GRADIENT:
-                drawSoftGradient(canvas, size, isDark);
+                drawSoftGradient(canvas, size, dark);
                 break;
 
             case RADIAL_GRADIENT:
-                drawRadialGradient(canvas, size, isDark);
+                drawRadialGradient(canvas, size, dark);
                 break;
 
-            case GRAINY_PAPER:
-                drawGrain(canvas, size, isDark);
-                break;
-
-            case FLOATING_SPHERES:
-                drawSpheres(canvas, size, isDark);
-                break;
-
-            case SCRIBBLE_PRO:
-                drawScribble(canvas, size, isDark);
+            case SILK_GRADIENT:
+                drawSilkGradient(canvas, size, dark);
                 break;
 
             case SOFT_MESH:
-                drawSoftMesh(canvas, size, isDark);
+                drawSoftMesh(canvas, size, dark);
                 break;
 
-            case PLASMA:
-                drawFastPlasma(canvas, size, isDark);
+            case CALM_GRID:
+                drawCalmGrid(canvas, size, dark);
                 break;
+
+            case FLOATING_SPHERES:
+                drawSpheres(canvas, size, dark);
+                break;
+
+            case ROUNDED_BLOBS:
+                drawRoundedBlobs(canvas, size, dark);
+                break;
+
+            case FROSTED_NOISE:
+                drawFrostedNoise(canvas, size, dark);
+                break;
+
         }
 
         return bmp;
@@ -100,48 +106,6 @@ public class PatternGenerator {
         c.drawRect(0, 0, size, size, p);
     }
 
-    private static void drawDiamondGrid(Canvas c, int size, boolean dark) {
-
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setColor(dark ? 0x11FFFFFF : 0x22000000);
-        p.setStrokeWidth(2f);
-
-        int step = size / 20;
-
-        for (int x = -size; x < size * 2; x += step) {
-            c.drawLine(x, 0, x + size, size, p);
-            c.drawLine(x, size, x + size, 0, p);
-        }
-    }
-
-    private static void drawDottedNoise(Canvas c, int size, boolean dark) {
-
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setColor(dark ? 0x22FFFFFF : 0x22000000);
-
-        int dots = size * size / 1200;
-
-        for (int i = 0; i < dots; i++) {
-            float x = random.nextFloat() * size;
-            float y = random.nextFloat() * size;
-            c.drawPoint(x, y, p);
-        }
-    }
-
-    private static void drawGrain(Canvas c, int size, boolean dark) {
-
-        Paint p = new Paint();
-        p.setColor(dark ? Color.BLACK : Color.WHITE);
-        c.drawRect(0, 0, size, size, p);
-
-        p.setColor(dark ? 0x11FFFFFF : 0x11000000);
-
-        int points = size * size / 900;
-
-        for (int i = 0; i < points; i++) {
-            c.drawPoint(random.nextInt(size), random.nextInt(size), p);
-        }
-    }
 
     private static void drawSpheres(Canvas c, int size, boolean dark) {
 
@@ -181,45 +145,82 @@ public class PatternGenerator {
         }
     }
 
-    private static void drawScribble(Canvas c, int size, boolean dark) {
+    private static void drawSilkGradient(Canvas c, int size, boolean dark) {
+
+        int[] colors = dark
+                ? new int[]{0xFF1C1C1E, 0xFF2C2C2E}
+                : new int[]{0xFFF2F4FF, 0xFFE6ECFF};
+
+        Shader shader = new LinearGradient(
+                0, 0, size, size,
+                colors,
+                null,
+                Shader.TileMode.CLAMP
+        );
 
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(2f);
-        p.setColor(dark ? 0x33FFFFFF : 0x33000000);
+        p.setShader(shader);
 
-        for (int i = 0; i < 40; i++) {
-            float x1 = random.nextFloat() * size;
-            float y1 = random.nextFloat() * size;
-            float x2 = random.nextFloat() * size;
-            float y2 = random.nextFloat() * size;
-            c.drawLine(x1, y1, x2, y2, p);
+        c.drawRect(0, 0, size, size, p);
+    }
+    private static void drawFrostedNoise(Canvas c, int size, boolean dark) {
+
+        int base = dark ? Color.parseColor("#181818") : Color.parseColor("#ffffff");
+        c.drawColor(base);
+
+        Paint p = new Paint();
+        p.setColor(dark ? 0x08FFFFFF : 0x08000000);
+
+        Random r = new Random(42);
+
+        for (int i = 0; i < size * size / 3000; i++) {
+            c.drawPoint(
+                    r.nextInt(size),
+                    r.nextInt(size),
+                    p
+            );
         }
     }
 
-    private static void drawFastPlasma(Canvas c, int size, boolean dark) {
+    private static void drawRoundedBlobs(Canvas c, int size, boolean dark) {
 
-        Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565);
+        int bg = dark ? Color.parseColor("#101010") : Color.parseColor("#FAFAFA");
+        c.drawColor(bg);
 
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-                float v = (float) (
-                        Math.sin(x * 0.02) +
-                                Math.sin(y * 0.03) +
-                                Math.sin((x + y) * 0.015)
-                );
+        Random r = new Random(123);
 
-                v = (v + 3) / 6f;
+        for (int i = 0; i < 5; i++) {
+            float radius = size * (0.15f + r.nextFloat() * 0.15f);
+            float x = r.nextFloat() * size;
+            float y = r.nextFloat() * size;
 
-                int r = (int) (dark ? v * 60 : v * 180);
-                int g = (int) (dark ? v * 50 : v * 150);
-                int b = (int) (dark ? v * 70 : v * 200);
+            int color = dark
+                    ? Color.argb(40, 200, 200, 255)
+                    : Color.argb(60, 100, 150, 255);
 
-                bmp.setPixel(x, y, Color.rgb(r, g, b));
-            }
+            p.setColor(color);
+            c.drawCircle(x, y, radius, p);
         }
-
-        c.drawBitmap(bmp, 0, 0, null);
     }
+
+    private static void drawCalmGrid(Canvas c, int size, boolean dark) {
+
+        int bg = dark ? Color.parseColor("#121212") : Color.parseColor("#FFFFFF");
+        c.drawColor(bg);
+
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(dark ? 0x10FFFFFF : 0x10000000);
+        p.setStrokeWidth(1f);
+
+        int step = size / 14;
+
+        for (int i = 0; i <= size; i += step) {
+            c.drawLine(i, 0, i, size, p);
+            c.drawLine(0, i, size, i, p);
+        }
+    }
+
+
 }
