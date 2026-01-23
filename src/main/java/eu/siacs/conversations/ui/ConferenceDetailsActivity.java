@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.SpannableString;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
@@ -15,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -69,6 +71,9 @@ public class ConferenceDetailsActivity extends XmppActivity
     private MediaAdapter mMediaAdapter;
     private UserPreviewAdapter mUserPreviewAdapter;
     private String uuid = null;
+
+    private boolean mAdvancedMode = false;
+    private TextView mucDescription;
 
     private final FutureCallback<Void> renameCallback =
             new FutureCallback<Void>() {
@@ -685,6 +690,19 @@ public class ConferenceDetailsActivity extends XmppActivity
             this.binding.jidWarning.setVisibility(View.INVISIBLE);
             this.binding.usersWrapper.setVisibility(View.GONE);
             this.binding.mucSettings.setVisibility(View.GONE);
+        }
+
+        // ---- MUC DESCRIPTION ----
+        final String description = mucOptions.getDescription();
+
+        if (!TextUtils.isEmpty(description)) {
+            mucDescription.setText(
+                    getString(R.string.muc_description_format, description)
+            );
+            mucDescription.setVisibility(View.VISIBLE);
+        } else {
+            mucDescription.setText(R.string.muc_description_placeholder);
+            mucDescription.setVisibility(View.VISIBLE);
         }
 
         final long mutedTill = mConversation.getLongAttribute(Conversation.ATTRIBUTE_MUTED_TILL, 0);

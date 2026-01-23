@@ -228,6 +228,22 @@ public class MucOptions {
         return roomConfigName == null ? null : roomConfigName.getValue();
     }
 
+    @Nullable
+    public String getDescription() {
+        final var roomInfo = getRoomInfoForm();
+        if (roomInfo == null) {
+            return null;
+        }
+
+        Field field = roomInfo.getFieldByName("muc#roominfo_description");
+
+        if (field == null) {
+            field = roomInfo.getFieldByName("muc#roomconfig_description");
+        }
+
+        return field == null ? null : field.getValue();
+    }
+
     public Restrictions getReactionsRestrictions() {
         final var infoQuery = getServiceDiscoveryResult();
         final var restrictions =
