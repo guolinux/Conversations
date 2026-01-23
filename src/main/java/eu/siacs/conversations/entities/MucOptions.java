@@ -243,7 +243,6 @@ public class MucOptions {
 
         return field == null ? null : field.getValue();
     }
-
     public Restrictions getReactionsRestrictions() {
         final var infoQuery = getServiceDiscoveryResult();
         final var restrictions =

@@ -701,8 +701,7 @@ public class ConferenceDetailsActivity extends XmppActivity
             );
             mucDescription.setVisibility(View.VISIBLE);
         } else {
-            mucDescription.setText(R.string.muc_description_placeholder);
-            mucDescription.setVisibility(View.VISIBLE);
+            mucDescription.setVisibility(View.GONE);
         }
 
         final long mutedTill = mConversation.getLongAttribute(Conversation.ATTRIBUTE_MUTED_TILL, 0);
