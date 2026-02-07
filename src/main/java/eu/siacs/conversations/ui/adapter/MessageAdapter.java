@@ -865,16 +865,13 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         }
         setBubblePadding(viewHolder.root(), mergeIntoTop, mergeIntoBottom);
         if (showAvatar) {
-            final var requiresAvatar =
-                    viewHolder instanceof StartBubbleMessageItemViewHolder
-                            ? !mergeIntoTop
-                            : !mergeIntoBottom;
+            // Show avatar on the last message of a merged group (bottom of the block)
+            final var requiresAvatar = !mergeIntoBottom;
             setRequiresAvatar(viewHolder, requiresAvatar);
             AvatarWorkerTask.loadAvatar(message, viewHolder.contactPicture(), R.dimen.avatar);
         } else {
             viewHolder.contactPicture().setVisibility(View.GONE);
         }
-        setAvatarDistance(viewHolder.messageBox(), viewHolder.getClass(), showAvatar);
         viewHolder.messageBox().setClipToOutline(true);
 
         resetClickListener(viewHolder.messageBox(), viewHolder.messageBody());
@@ -1161,32 +1158,6 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         return viewHolder.binding.getRoot();
     }
 
-    private void setAvatarDistance(
-            final LinearLayout messageBox,
-            final Class<? extends BubbleMessageItemViewHolder> clazz,
-            final boolean showAvatar) {
-        final ViewGroup.MarginLayoutParams layoutParams =
-                (ViewGroup.MarginLayoutParams) messageBox.getLayoutParams();
-        if (showAvatar) {
-            final var resources = messageBox.getResources();
-            if (clazz == StartBubbleMessageItemViewHolder.class) {
-                layoutParams.setMarginStart(
-                        resources.getDimensionPixelSize(R.dimen.bubble_avatar_distance));
-                layoutParams.setMarginEnd(0);
-            } else if (clazz == EndBubbleMessageItemViewHolder.class) {
-                layoutParams.setMarginStart(0);
-                layoutParams.setMarginEnd(
-                        resources.getDimensionPixelSize(R.dimen.bubble_avatar_distance));
-            } else {
-                throw new AssertionError("Avatar distances are not available on this view type");
-            }
-        } else {
-            layoutParams.setMarginStart(0);
-            layoutParams.setMarginEnd(0);
-        }
-        messageBox.setLayoutParams(layoutParams);
-    }
-
     private void setBubblePadding(
             final ConstraintLayout root,
             final boolean mergeIntoTop,
@@ -1208,17 +1179,16 @@ public class MessageAdapter extends ArrayAdapter<Message> {
 
     private void setRequiresAvatar(
             final BubbleMessageItemViewHolder viewHolder, final boolean requiresAvatar) {
+        // Avatar is now positioned below the message bubble
         final var layoutParams = viewHolder.contactPicture().getLayoutParams();
         if (requiresAvatar) {
             final var resources = viewHolder.contactPicture().getResources();
             final var avatarSize = resources.getDimensionPixelSize(R.dimen.bubble_avatar_size);
             layoutParams.height = avatarSize;
             viewHolder.contactPicture().setVisibility(View.VISIBLE);
-            viewHolder.messageBox().setMinimumHeight(avatarSize);
         } else {
             layoutParams.height = 0;
             viewHolder.contactPicture().setVisibility(View.INVISIBLE);
-            viewHolder.messageBox().setMinimumHeight(0);
         }
         viewHolder.contactPicture().setLayoutParams(layoutParams);
     }
