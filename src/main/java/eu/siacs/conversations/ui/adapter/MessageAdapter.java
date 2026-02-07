@@ -1179,7 +1179,6 @@ public class MessageAdapter extends ArrayAdapter<Message> {
 
     private void setRequiresAvatar(
             final BubbleMessageItemViewHolder viewHolder, final boolean requiresAvatar) {
-        // Avatar is now positioned below the message bubble
         final var layoutParams = viewHolder.contactPicture().getLayoutParams();
         if (requiresAvatar) {
             final var resources = viewHolder.contactPicture().getResources();
