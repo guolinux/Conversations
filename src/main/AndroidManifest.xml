@@ -201,7 +201,7 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="stateUnchanged" />
         <activity
-            android:name=".ui.ScanActivity"
+            android:name=".ui.ScanQrCodeActivity"
             android:enableOnBackInvokedCallback="false"
             android:theme="@style/Theme.Conversations3.FullScreen"
             android:windowSoftInputMode="stateAlwaysHidden" />
@@ -242,7 +242,7 @@
                     <data android:fragmentPattern=".*" />
                 </uri-relative-filter-group>
             </intent-filter>
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />

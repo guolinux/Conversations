@@ -380,9 +380,6 @@
     <string name="remove_from_room">Уклони из групне преписке</string>
     <string name="remove_from_channel">Уклони из канала</string>
     <string name="could_not_change_affiliation">Није могуће променити припадност за %s</string>
-    <string name="ban_from_conference">Избаци из групне преписке</string>
-    <string name="ban_from_channel">Избаци из канала</string>
-    <string name="removing_from_public_conference">Покушаваш да уклониш %s из јавног канала. Ово се постиже једино трајним избацивањем корисника.</string>
     <string name="ban_now">Избаци одмах</string>
     <string name="could_not_change_role">Није могуће променити улогу за %s</string>
     <string name="conference_options">Подешавања приватне групне преписке</string>
@@ -1189,4 +1186,15 @@
     <string name="open_keyboard">Отвори тастатуру</string>
     <string name="server_invite">Позови на сервер</string>
     <string name="qr_code_actions">Очитај QR, Прикажи QR, Позивнице на сервер</string>
+    <string name="qr_code_contains_link">Отвори веб линк?</string>
+    <string name="qr_code_contains_link_text">Овај QR кôд упућује на неки сајт. Потврди адресу испод пре него што је отвориш у прегледачу:</string>
+    <string name="open_browser">Отвори прегледач</string>
+    <string name="muc_user_ban_explainer">Овај корисник више неће моћи да види нове поруке нити да учествује у преписци.</string>
+    <plurals name="delete_n_messages">
+        <item quantity="one">Обриши %d поруку</item>
+        <item quantity="few">Обриши %d поруке</item>
+        <item quantity="other">Обриши %d порука</item>
+    </plurals>
+    <string name="server_info_stanzas_rx_tx">Станце (rx/tx)</string>
+    <string name="server_info_stanzas_rx_tx_push">Станце (rx/tx/push)</string>
 </resources>

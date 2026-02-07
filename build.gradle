@@ -7,7 +7,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.13.2'
-        classpath 'com.diffplug.spotless:spotless-plugin-gradle:8.1.0'
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:8.2.1'
     }
 }
 
@@ -61,7 +61,7 @@ dependencies {
     implementation 'androidx.sharetarget:sharetarget:1.2.0'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.2.0'
     implementation 'androidx.viewpager:viewpager:1.1.0'
-    implementation 'androidx.work:work-runtime:2.11.0'
+    implementation 'androidx.work:work-runtime:2.11.1'
     implementation 'com.github.open-keychain.open-keychain:openpgp-api:v5.7.1'
     implementation 'com.google.android.material:material:1.13.0'
     implementation 'com.google.guava:guava:33.5.0-android'
@@ -86,13 +86,14 @@ dependencies {
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
     implementation 'org.whispersystems:signal-protocol-java:2.6.2'
     conversationsPlaystoreImplementation 'com.android.installreferrer:installreferrer:2.2'
-    playstoreImplementation('com.google.firebase:firebase-messaging:25.0.1') {
-        exclude group: 'com.google.firebase', module: 'firebase-core'
-        exclude group: 'com.google.firebase', module: 'firebase-analytics'
-        exclude group: 'com.google.firebase', module: 'firebase-measurement-connector'
-
-    }
     quicksyImplementation 'io.michaelrocks:libphonenumber-android:9.0.22'
+    quicksyImplementation "dev.paseto:jpaseto-api:0.7.0"
+    quicksyImplementation "dev.paseto:jpaseto-impl:0.7.0"
+    quicksyImplementation "dev.paseto:jpaseto-gson:0.7.0"
+    quicksyImplementation ("dev.paseto:jpaseto-bouncy-castle:0.7.0")  {
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
+    }
+
     quicksyPlaystoreImplementation 'com.google.android.gms:play-services-auth-api-phone:18.3.0'
 
     testImplementation 'junit:junit:4.13.2'
@@ -113,8 +114,8 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 36
-        versionCode 42166
-        versionName "2.19.9"
+        versionCode 42167
+        versionName "2.19.10"
         archivesBaseName += "-$versionName"
         applicationId "eu.siacs.conversations"
         resValue "string", "applicationId", applicationId

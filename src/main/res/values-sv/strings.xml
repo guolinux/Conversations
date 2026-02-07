@@ -383,9 +383,6 @@
     <string name="remove_from_room">Ta bort från gruppchatt</string>
     <string name="remove_from_channel">Ta bort från kanal</string>
     <string name="could_not_change_affiliation">Kunde inte ändra anknytningen till %s</string>
-    <string name="ban_from_conference">Blockera från gruppchatt</string>
-    <string name="ban_from_channel">Blockera från kanal</string>
-    <string name="removing_from_public_conference">Du försöker att ta bort %s från en offentlig kanal. Det enda sättet att göra det på, är att stänga av användaren för alltid.</string>
     <string name="ban_now">Bannlys nu</string>
     <string name="could_not_change_role">Kunde inte ändra rollen för %s</string>
     <string name="conference_options">Konfiguration för privat gruppchatt</string>
@@ -1169,4 +1166,7 @@
     <string name="open_keyboard">Öppna tangentbordet</string>
     <string name="server_invite">Bjud in till server</string>
     <string name="qr_code_actions">Skanna QR-kod, visa QR-kod, serverinbjudan</string>
+    <string name="qr_code_contains_link">Öppna webblänk?</string>
+    <string name="qr_code_contains_link_text">Denna QR-kod pekar till en webbplats. Kontrollera adressen nedan innan du öppnar den i din webbläsare:</string>
+    <string name="open_browser">Öppna webbläsare</string>
 </resources>

@@ -377,9 +377,6 @@
     <string name="remove_from_room">Usuń z konferencji</string>
     <string name="remove_from_channel">Usuń z kanału</string>
     <string name="could_not_change_affiliation">Nie udało się zmienić stanowiska dla %s</string>
-    <string name="ban_from_conference">Zbanuj</string>
-    <string name="ban_from_channel">Zbanuj na kanale</string>
-    <string name="removing_from_public_conference">Chcesz usunąć %s z publicznego kanału. Jedynym sposobem aby to zrobić jest zbanowanie tego użytkownika na zawsze.</string>
     <string name="ban_now">Zbanuj teraz</string>
     <string name="could_not_change_role">Nie udało się zmienić funkcji %s</string>
     <string name="conference_options">Konfiguracja prywatnej rozmowy grupowej</string>
@@ -1180,4 +1177,14 @@
     <string name="open_keyboard">Otwórz klawiaturę</string>
     <string name="server_invite">Zaproś na serwer</string>
     <string name="qr_code_actions">Skanowanie QR‑ów, pokazywanie QR‑ów, zapraszanie na serwer</string>
+    <string name="qr_code_contains_link">Otworzyć link internetowy?</string>
+    <string name="qr_code_contains_link_text">Ten kod QR kieruje do strony internetowej. Sprawdź adres przed otwarciem go w Twojej przeglądarce:</string>
+    <string name="open_browser">Otwórz przeglądarkę</string>
+    <string name="muc_user_ban_explainer">Ten użytkownik nie będzie mógł widzieć nowych wiadomości ani uczestniczyć w rozmowie.</string>
+    <plurals name="delete_n_messages">
+        <item quantity="one">Usuń %d wiadomość</item>
+        <item quantity="few">Usuń %d wiadomości</item>
+        <item quantity="many">Usuń %d wiadomości</item>
+        <item quantity="other">Usuń %d wiadomości</item>
+    </plurals>
 </resources>

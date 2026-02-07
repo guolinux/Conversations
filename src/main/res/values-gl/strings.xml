@@ -375,9 +375,6 @@
     <string name="remove_from_room">Eliminar a parola en grupo</string>
     <string name="remove_from_channel">Retirar da canle</string>
     <string name="could_not_change_affiliation">Non se puido mudar a afiliación de %s</string>
-    <string name="ban_from_conference">Vetar na parola en grupo</string>
-    <string name="ban_from_channel">Vetar na canle</string>
-    <string name="removing_from_public_conference">Estás a intentar eliminar a %s dunha canle pública. O único xeito de facelo é prohibíndolle o acceso para sempre.</string>
     <string name="ban_now">Rexeitar agora</string>
     <string name="could_not_change_role">Non se puido mudar o rol de %s</string>
     <string name="conference_options">Configuración do grupo privado de conversa</string>
@@ -1154,4 +1151,12 @@
     <string name="open_keyboard">Abrir teclado</string>
     <string name="server_invite">Convidar ao servidor</string>
     <string name="qr_code_actions">Escanear QR, Mostrar QR, Convidar ao servidor</string>
+    <string name="qr_code_contains_link">Abrir Ligazón á Web?</string>
+    <string name="qr_code_contains_link_text">Este código QR refírese a un sitio web. Comproba embaixo o enderezo antes de abrilo no navegador:</string>
+    <string name="open_browser">Abrir Navegador</string>
+    <string name="muc_user_ban_explainer">Esta usuaria xa non poderá ver as novas mensaxes ou participar na conversa.</string>
+    <plurals name="delete_n_messages">
+        <item quantity="one">Eliminar %d mensaxe</item>
+        <item quantity="other">Eliminar %d mensaxes</item>
+    </plurals>
 </resources>

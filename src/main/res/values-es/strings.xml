@@ -374,9 +374,6 @@
     <string name="remove_from_room">Expulsar de la conversación</string>
     <string name="remove_from_channel">Eliminar del canal</string>
     <string name="could_not_change_affiliation">No se puede cambiar la afiliación de %s</string>
-    <string name="ban_from_conference">Prohibir entrada en la conversación</string>
-    <string name="ban_from_channel">Prohibir entrada al canal</string>
-    <string name="removing_from_public_conference">Estás intentando eliminar a %s de un canal público. La única manera de hacerlo es prohibir su entrada para siempre. </string>
     <string name="ban_now">Prohibir ahora</string>
     <string name="could_not_change_role">No se puede cambiar el rol de %s</string>
     <string name="conference_options">Configuración de conversación en grupo privada</string>
@@ -1167,4 +1164,15 @@
     <string name="open_keyboard">Abrir teclado</string>
     <string name="server_invite">Invitar al servidor</string>
     <string name="qr_code_actions">Escanear QR, Mostrar QR, Invitación al servidor</string>
+    <string name="qr_code_contains_link">¿Abrir enlace web?</string>
+    <string name="qr_code_contains_link_text">Este código QR apunta a un sitio web. Por favor, revisa la siguiente dirección antes de abrirla en tu navegador:</string>
+    <string name="open_browser">Abrir navegador</string>
+    <string name="muc_user_ban_explainer">Este usuario ya no podrá ver los mensajes nuevos ni participar en la conversación.</string>
+    <plurals name="delete_n_messages">
+        <item quantity="one">Eliminar %d mensaje</item>
+        <item quantity="many">Eliminar %d mensajes</item>
+        <item quantity="other">Eliminar %d mensajes</item>
+    </plurals>
+    <string name="server_info_stanzas_rx_tx_push">Estanzas (rx/tx/push)</string>
+    <string name="server_info_stanzas_rx_tx">Estanzas (rx/tx)</string>
 </resources>
