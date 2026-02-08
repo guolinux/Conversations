@@ -1187,7 +1187,7 @@ public class MessageAdapter extends ArrayAdapter<Message> {
             viewHolder.contactPicture().setVisibility(View.VISIBLE);
         } else {
             layoutParams.height = 0;
-            viewHolder.contactPicture().setVisibility(View.INVISIBLE);
+            viewHolder.contactPicture().setVisibility(View.GONE);
         }
         viewHolder.contactPicture().setLayoutParams(layoutParams);
     }
