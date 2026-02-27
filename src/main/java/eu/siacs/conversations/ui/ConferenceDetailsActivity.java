@@ -229,6 +229,7 @@ public class ConferenceDetailsActivity extends XmppActivity
         this.binding.changeConferenceButton.setOnClickListener(this.mChangeConferenceSettings);
         setSupportActionBar(binding.toolbar);
         configureActionBar(getSupportActionBar());
+        mucDescription = findViewById(R.id.muc_description);
         this.binding.editNickButton.setOnClickListener(
                 v ->
                         quickEdit(
