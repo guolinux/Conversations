@@ -1159,4 +1159,5 @@
     <string name="dismiss_as_owner">Retirar propiedade</string>
     <string name="dismiss_as_admin">Degradar Admin</string>
     <string name="account_status_airplane_mode">Modo avión</string>
+    <string name="reply_to_message">Responder</string>
 </resources>

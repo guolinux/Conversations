@@ -1175,4 +1175,5 @@
     <string name="make_owner">Rendi proprietario</string>
     <string name="dismiss_as_owner">Declassa da proprietario</string>
     <string name="account_status_airplane_mode">Modalità aereo</string>
+    <string name="reply_to_message">Rispondi</string>
 </resources>

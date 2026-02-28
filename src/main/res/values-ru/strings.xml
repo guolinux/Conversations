@@ -1209,4 +1209,5 @@
     <string name="make_owner">Назначить владельцем</string>
     <string name="dismiss_as_owner">Удалить из владельцев</string>
     <string name="account_status_airplane_mode">Режим полёта</string>
+    <string name="reply_to_message">Ответить</string>
 </resources>

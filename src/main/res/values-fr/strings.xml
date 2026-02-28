@@ -1175,4 +1175,5 @@
         <item quantity="many">Supprimer %d de messages</item>
         <item quantity="other">Supprimer %d messages</item>
     </plurals>
+    <string name="reply_to_message">Répondre</string>
 </resources>

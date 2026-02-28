@@ -1092,4 +1092,5 @@
     <string name="pref_chat_bubbles">聊天氣泡</string>
     <string name="pref_chat_bubbles_summary">背景顏色、字體大小、大頭貼</string>
     <string name="pref_title_bubbles">聊天氣泡</string>
+    <string name="reply_to_message">回覆</string>
 </resources>

@@ -1102,4 +1102,5 @@
     <string name="account_status_connection_timeout">Time-out voor verbinding</string>
     <string name="retry_with_p2p">Opnieuw proberen met P2P</string>
     <string name="account_status_channel_binding">Kanaalbinding onbeschikbaar</string>
+    <string name="reply_to_message">Beantwoorden</string>
 </resources>

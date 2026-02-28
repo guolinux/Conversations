@@ -1174,4 +1174,5 @@
         <item quantity="other">Ta bort %d meddelanden</item>
     </plurals>
     <string name="account_status_airplane_mode">Flygplansläge</string>
+    <string name="reply_to_message">Svara</string>
 </resources>

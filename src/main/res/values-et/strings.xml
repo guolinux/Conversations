@@ -1179,4 +1179,5 @@
     <string name="make_owner">Muuda omanikuks</string>
     <string name="dismiss_as_owner">Võta omaniku roll ära</string>
     <string name="account_status_airplane_mode">Lennukirežiim</string>
+    <string name="reply_to_message">Vasta</string>
 </resources>

@@ -1209,4 +1209,5 @@
     <string name="dismiss_as_admin">Вилучити з адміністраторів</string>
     <string name="dismiss_as_owner">Вилучити з власників</string>
     <string name="account_status_airplane_mode">Режим «У літаку»</string>
+    <string name="reply_to_message">Відповісти</string>
 </resources>

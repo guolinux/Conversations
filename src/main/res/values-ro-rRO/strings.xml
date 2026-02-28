@@ -1180,4 +1180,5 @@
     <string name="dismiss_as_admin">Abrogă rol de administrator</string>
     <string name="dismiss_as_owner">Abrogă rol de proprietar</string>
     <string name="account_status_airplane_mode">Modul Avion</string>
+    <string name="reply_to_message">Răspunde</string>
 </resources>

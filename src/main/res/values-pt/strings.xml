@@ -1165,4 +1165,5 @@
     <string name="make_owner">Encarregar de dono</string>
     <string name="dismiss_as_owner">Desencarregar de dono</string>
     <string name="account_status_airplane_mode">Modo Avião</string>
+    <string name="reply_to_message">Responder</string>
 </resources>

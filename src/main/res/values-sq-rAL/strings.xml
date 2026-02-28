@@ -1165,4 +1165,5 @@
     <string name="make_owner">Bëjeni të zotin</string>
     <string name="dismiss_as_owner">Hiqeni nga zot</string>
     <string name="account_status_airplane_mode">Mënyra aeroplan</string>
+    <string name="reply_to_message">Përgjigjuni</string>
 </resources>

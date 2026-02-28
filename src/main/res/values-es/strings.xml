@@ -1166,4 +1166,5 @@
     <string name="server_info_stanzas_rx_tx">Estanzas (rx/tx)</string>
     <string name="share_invitation">Compartir invitación</string>
     <string name="publish_qr_code">Publicar código QR</string>
+    <string name="reply_to_message">Responder</string>
 </resources>

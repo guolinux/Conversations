@@ -1159,4 +1159,5 @@
     <string name="make_admin">Administrator festlegen</string>
     <string name="dismiss_as_admin">Als Administrator entfernen</string>
     <string name="account_status_airplane_mode">Flugmodus</string>
+    <string name="reply_to_message">Antworten</string>
 </resources>

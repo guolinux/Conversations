@@ -1089,4 +1089,5 @@
     <string name="account_status_tls_error_untrusted">信頼できない証明書</string>
     <string name="account_status_channel_binding">チャネルバインディング非対応</string>
     <string name="delete_message">メッセージ削除</string>
+    <string name="reply_to_message">返信</string>
 </resources>

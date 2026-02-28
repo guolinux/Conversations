@@ -1146,4 +1146,5 @@
     <string name="make_owner">设为所有者</string>
     <string name="dismiss_as_owner">撤销所有者</string>
     <string name="account_status_airplane_mode">飞行模式</string>
+    <string name="reply_to_message">回复</string>
 </resources>

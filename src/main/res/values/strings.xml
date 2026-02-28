@@ -1152,4 +1152,6 @@
         <item quantity="one">Delete %d message</item>
         <item quantity="other">Delete %d messages</item>
     </plurals>
+    <string name="reply_to_message">Reply</string>
+    <string name="reply_preview">Preview...</string>
 </resources>

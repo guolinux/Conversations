@@ -1145,4 +1145,5 @@
     <string name="emoji_reactions">Reações de emoji</string>
     <string name="open_keyboard">Abrir teclado</string>
     <string name="qr_code_actions">Ler QR, mostrar QR, convite do servidor</string>
+    <string name="reply_to_message">Responder</string>
 </resources>

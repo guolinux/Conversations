@@ -561,4 +561,5 @@
     <string name="no_application_found_to_view_contact">Fant ingen app for å vise kontakt</string>
     <string name="pref_show_dynamic_tags">Dynamiske merker</string>
     <string name="conference_creation_failed">Kunne ikke lage gruppesamtale</string>
+    <string name="reply_to_message">Svar</string>
 </resources>

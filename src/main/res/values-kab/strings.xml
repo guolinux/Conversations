@@ -575,4 +575,5 @@
     <string name="conference_options">Tawila n ugraw udiwenni uslig</string>
     <string name="modified_conference_options">Tinefrunin n ugraw udiwenni yettwabeddelen!</string>
     <string name="could_not_modify_conference_options">Ulamek abeddel n tnefrunin n ugraw n udiwenni</string>
+    <string name="reply_to_message">Err</string>
 </resources>

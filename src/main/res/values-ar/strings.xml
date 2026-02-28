@@ -633,4 +633,5 @@
     <string name="account_status_regis_invalid_token">رمز التسجيل غير صالح</string>
     <string name="bad_key_for_encryption">مفتاح تعمية خاطئ.</string>
     <string name="invalid_jid">هذا ليس عنوان XMPP صالح</string>
+    <string name="reply_to_message">الرد</string>
 </resources>

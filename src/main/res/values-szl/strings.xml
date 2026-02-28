@@ -958,4 +958,5 @@
     <string name="plain_text_document">Dokumynt ze samym tekstym</string>
     <string name="account_registrations_are_not_supported">Registracyjo kōnt niy je spiyrano</string>
     <string name="no_xmpp_adddress_found">Żodno adresa XMPP niyznojdziōno</string>
+    <string name="reply_to_message">Ôdpowiydz</string>
 </resources>

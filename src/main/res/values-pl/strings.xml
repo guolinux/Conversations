@@ -1187,4 +1187,5 @@
     <string name="make_owner">Uczyń właścicielem</string>
     <string name="dismiss_as_owner">Wyłącz jako właściciela</string>
     <string name="account_status_airplane_mode">Tryb samolotowy</string>
+    <string name="reply_to_message">Odpowiedz</string>
 </resources>
