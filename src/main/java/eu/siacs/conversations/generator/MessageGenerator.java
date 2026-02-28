@@ -10,6 +10,7 @@ import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xmpp.Jid;
 import im.conversations.android.xmpp.model.correction.Replace;
+import im.conversations.android.xmpp.model.reply.Reply;
 import im.conversations.android.xmpp.model.hints.Store;
 import im.conversations.android.xmpp.model.markers.Markable;
 import im.conversations.android.xmpp.model.unique.OriginId;
@@ -59,6 +60,9 @@ public class MessageGenerator extends AbstractGenerator {
         }
         if (message.edited()) {
             packet.addExtension(new Replace(message.getEditedIdWireFormat()));
+        }
+        if (message.getReplyMessageUuid() != null) {
+            packet.addExtension(new Reply(message.getReplyMessageUuid(), message.getReplyTo()));
         }
         return packet;
     }

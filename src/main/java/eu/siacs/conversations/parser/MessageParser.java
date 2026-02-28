@@ -279,6 +279,16 @@ public class MessageParser extends AbstractParser
         }
         final LocalizedContent body = packet.getBody();
         final Element mucUserElement = packet.findChild("x", Namespace.MUC_USER);
+        final Element replyMessageElement = packet.findChild("reply", Namespace.XMPP_REPLY);
+        final String replyMessageUuid;
+        final String replyTo;
+        if (replyMessageElement != null) {
+            replyMessageUuid = replyMessageElement.getAttribute("id");
+            replyTo = replyMessageElement.getAttribute("to");
+        } else {
+            replyMessageUuid = null;
+            replyTo = null;
+        }
         final boolean isTypeGroupChat =
                 packet.getType()
                         == im.conversations.android.xmpp.model.stanza.Message.Type.GROUPCHAT;
@@ -522,6 +532,8 @@ public class MessageParser extends AbstractParser
             message.setServerMsgId(serverMsgId);
             message.setCarbon(isCarbon);
             message.setTime(timestamp);
+            message.setReplyMessageUuid(replyMessageUuid);
+            message.setReplyTo(replyTo);
             if (body != null && body.content != null && body.content.equals(oobUrl)) {
                 message.setOob(true);
                 if (CryptoHelper.isPgpEncryptedUrl(oobUrl)) {

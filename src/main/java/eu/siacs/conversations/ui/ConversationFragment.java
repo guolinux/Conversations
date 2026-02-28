@@ -52,6 +52,7 @@ import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.TextView.OnEditorActionListener;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
@@ -196,6 +197,8 @@ public class ConversationFragment extends XmppFragment
     public static final String STATE_MEDIA_PREVIEWS =
             ConversationFragment.class.getName() + ".take_photo_uri";
     private static final String STATE_LAST_MESSAGE_UUID = "state_last_message_uuid";
+    private static final String STATE_REPLY_MESSAGE_UUID = "state_reply_message_uuid";
+    private static final String STATE_REPLY_TO = "state_reply_to";
 
     private final List<Message> messageList = new ArrayList<>();
     private final PendingItem<ActivityResult> postponedActivityResult = new PendingItem<>();
@@ -206,6 +209,8 @@ public class ConversationFragment extends XmppFragment
     private final PendingItem<ScrollState> pendingScrollState = new PendingItem<>();
     private final PendingItem<String> pendingLastMessageUuid = new PendingItem<>();
     private final PendingItem<Message> pendingMessage = new PendingItem<>();
+    private final PendingItem<String> pendingReplyMessageUuid = new PendingItem<>();
+    private final PendingItem<String> pendingReplyTo = new PendingItem<>();
     private final MediaPreviewAdapter mediaPreviewAdapter = new MediaPreviewAdapter(this);
     public Uri mPendingEditorContent = null;
     protected MessageAdapter messageListAdapter;
@@ -214,6 +219,12 @@ public class ConversationFragment extends XmppFragment
     private FragmentConversationBinding binding;
     private Toast messageLoaderToast;
     private boolean reInitRequiredOnStart = true;
+    private String replyingMessageUuid = null;
+    private String replyingTo = null;
+    private Message replyingToMessage = null;
+    private View replyPreviewContainer;
+    private TextView replyPreviewTitle;
+    private TextView replyPreviewBody;
     private final OnClickListener clickToMuc =
             new OnClickListener() {
 
@@ -826,11 +837,16 @@ public class ConversationFragment extends XmppFragment
     }
 
     private int getIndexOf(String uuid, List<Message> messages) {
+        return getIndexOf(uuid, messages, false);
+    }
+
+    private int getIndexOf(String uuid, List<Message> messages, boolean isForReply) {
         if (uuid == null) {
             return messages.size() - 1;
         }
         for (int i = 0; i < messages.size(); ++i) {
-            if (uuid.equals(messages.get(i).getUuid())) {
+            if (uuid.equals(messages.get(i).getUuid()) ||
+                    (isForReply && uuid.equals(messages.get(i).getRemoteMsgId()))) {
                 return i;
             }
         }
@@ -984,6 +1000,10 @@ public class ConversationFragment extends XmppFragment
             message.setBody(body);
             message.putEdited(message.getUuid(), message.getServerMsgId());
             message.setUuid(UUID.randomUUID().toString());
+        }
+        if (replyingMessageUuid != null && replyingTo != null) {
+            message.setReplyMessageUuid(replyingMessageUuid);
+            message.setReplyTo(replyingTo);
         }
         if (conversation.getNextEncryption() == Message.ENCRYPTION_PGP) {
             sendPgpMessage(message);
@@ -1249,6 +1269,19 @@ public class ConversationFragment extends XmppFragment
             final Bundle savedInstanceState) {
         this.binding =
                 DataBindingUtil.inflate(inflater, R.layout.fragment_conversation, container, false);
+
+        replyPreviewContainer = binding.getRoot().findViewById(R.id.reply_preview_container);
+        replyPreviewTitle = binding.getRoot().findViewById(R.id.reply_preview_title);
+        replyPreviewBody = binding.getRoot().findViewById(R.id.reply_preview_body);
+        View replyPreviewClose = binding.getRoot().findViewById(R.id.reply_preview_close);
+        binding.replyPreviewContainer.setOnClickListener(v -> jumpToReplyTarget());
+        if (replyPreviewClose != null) {
+            replyPreviewClose.setOnClickListener(v -> clearReplyTarget());
+        }
+        if (replyPreviewContainer != null) {
+            replyPreviewContainer.setVisibility(View.GONE);
+        }
+
         binding.getRoot().setOnClickListener(null); // TODO why the fuck did we do this?
 
         binding.textinput.addTextChangedListener(
@@ -1266,6 +1299,14 @@ public class ConversationFragment extends XmppFragment
         messageListAdapter = new MessageAdapter((XmppActivity) getActivity(), this.messageList);
         messageListAdapter.setOnContactPictureClicked(this);
         messageListAdapter.setOnContactPictureLongClicked(this);
+        messageListAdapter.setOnReplyBoxClickedListener((replyToUuid, positionInAdapter) -> {
+            if (positionInAdapter >= 0) {
+                binding.messagesView.smoothScrollToPosition(positionInAdapter);
+                // TODO: maybe setSelection() is better, if we want instant jumping
+            } else {
+                Toast.makeText(getActivity(), "Referenced message not loaded", Toast.LENGTH_SHORT).show(); // TODO: add translation on Weblate
+            }
+        });
         binding.messagesView.setAdapter(messageListAdapter);
 
         registerForContextMenu(binding.messagesView);
@@ -1301,6 +1342,183 @@ public class ConversationFragment extends XmppFragment
     private void quoteMessage(Message message) {
         quoteText(MessageUtils.prepareQuote(message));
     }
+
+    private void replyToMessageId(String uuid, String to) {
+        if (!binding.textinput.isEnabled()) {
+            return;
+        }
+        showReplyTarget(uuid, to);
+        binding.textinput.requestFocus();
+        InputMethodManager imm =
+                (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.showSoftInput(binding.textinput, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
+
+    private void replyToMessage(Message message) {
+        if (message.getStatus() == Message.STATUS_RECEIVED)  {
+            replyToMessageId(message.getRemoteMsgId(), message.getDisplayName()); // cawa questo e' da fixare
+        } else {
+            replyToMessageId(message.getUuid(), message.getDisplayName()); // cawa questo e' da fixare
+        }
+    }
+
+    private void showReplyTarget(@NonNull final String uuid, @NonNull final String to) {
+        this.replyingMessageUuid = uuid;
+        this.replyingTo = to;
+        this.replyingToMessage = findLoadedMessageByUuidForReply(uuid); // may be null
+        updateReplyPreviewUi();
+    }
+
+    private void clearReplyTarget() {
+        this.replyingMessageUuid = null;
+        this.replyingTo = null;
+        this.replyingToMessage = null;
+        updateReplyPreviewUi();
+    }
+
+    private void updateReplyPreviewUi() {
+        if (binding == null ||
+                replyPreviewContainer == null ||
+                replyPreviewTitle == null ||
+                replyPreviewBody == null) {
+            return;
+        }
+
+        if (Strings.isNullOrEmpty(replyingMessageUuid)) {
+            replyPreviewContainer.setVisibility(View.GONE);
+            return;
+        }
+
+        if (replyingToMessage == null) {
+            replyingToMessage = findLoadedMessageByUuidForReply(replyingMessageUuid);
+            if (replyingToMessage == null) {
+                return;
+            }
+        }
+
+        replyPreviewContainer.setVisibility(View.VISIBLE);
+        replyPreviewTitle.setText(R.string.reply_to_message);
+        replyPreviewBody.setText(buildReplyPreview(replyingToMessage));
+    }
+
+    private void jumpToReplyTarget() {
+        if (Strings.isNullOrEmpty(replyingMessageUuid) || binding == null) {
+            return;
+        }
+
+        final int pos = getIndexOf(replyingMessageUuid, messageList, true);
+        if (pos >= 0) {
+            scrollToMessagePosition(pos);
+            // TODO: do we want some blinking animation?
+            return;
+        }
+
+        attemptLoadUntilFoundForReply(replyingMessageUuid, 30); // TODO: how do we handle this bound?
+    }
+
+    private void scrollToMessagePosition(final int pos) {
+        stopScrolling();
+        binding.messagesView.setSelectionFromTop(Math.max(0, pos - 1), dpToPx(24));
+        binding.messagesView.post(this::fireReadEvent);
+    }
+
+    private void attemptLoadUntilFoundForReply(@NonNull final String uuid, final int remainingAttempts) {
+        if (conversation == null || remainingAttempts <= 0) {
+            Toast.makeText(
+                    requireContext(),
+                    getText(R.string.download_failed_file_not_found),
+                    Toast.LENGTH_SHORT
+            ).show(); // TODO: should we have a more specific text?
+            return;
+        }
+
+        if (messageList.isEmpty()) {
+            Toast.makeText(
+                    requireContext(),
+                    getText(R.string.download_failed_file_not_found),
+                    Toast.LENGTH_SHORT
+            ).show(); // TODO: should we have a more specific text?
+            return;
+        }
+
+        long timestamp;
+        if (messageList.get(0).getType() == Message.TYPE_STATUS && messageList.size() >= 2) {
+            timestamp = messageList.get(1).getTimeSent();
+        } else {
+            timestamp = messageList.get(0).getTimeSent();
+        }
+
+        // Trigger loading more
+        requireXmppActivity()
+                .xmppConnectionService
+                .loadMoreMessages(
+                        conversation,
+                        timestamp,
+                        new XmppConnectionService.OnMoreMessagesLoaded() {
+                            @Override
+                            public void onMoreMessagesLoaded(final int c, final Conversation conv) {
+                                if (ConversationFragment.this.conversation != conv) {
+                                    conv.messagesLoaded.set(true);
+                                    return;
+                                }
+                                runOnUiThreadQuiet(() -> {
+                                    synchronized (messageList) {
+                                        onMoreMessagesLoadedImpl(conv);
+                                    }
+
+                                    final int pos = getIndexOf(uuid, messageList, true);
+                                    if (pos >= 0) {
+                                        scrollToMessagePosition(pos);
+                                        // TODO: same as above: do we want some animation?
+                                    } else {
+                                        attemptLoadUntilFoundForReply(uuid, remainingAttempts - 1);
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void informUser(final int resId) {
+                                runOnUiThreadQuiet(() -> informUserImpl(resId));
+                            }
+                        });
+    }
+
+    private int dpToPx(final int dp) {
+        final float density = requireContext().getResources().getDisplayMetrics().density;
+        return (int) (dp * density + 0.5f);
+    }
+
+    private Message findLoadedMessageByUuidForReply(@NonNull final String uuid) {
+        synchronized (this.messageList) {
+            for (final Message m : this.messageList) {
+                if (m != null && (uuid.equals(m.getUuid()) || uuid.equals(m.getRemoteMsgId()))) {
+                    return m;
+                }
+            }
+        }
+        return null;
+    }
+
+    private CharSequence buildReplyPreview(@NonNull final Message m) {
+        if (m.isDeleted()) {
+            return getText(R.string.file_deleted); // TODO: Should we have a more specific text?
+        }
+        if (m.isFileOrImage()) {
+            return UIHelper.getFileDescriptionString(requireContext(), m);
+        }
+        final String body = CharSequences.nullToEmpty(m.getBody());
+        return ellipsizeOneLine(body.replace('\n', ' ').trim(), 120); // TODO: should we parametrize this maxLen?
+    }
+
+    private static String ellipsizeOneLine(@NonNull final String s, final int maxLen) {
+        if (s.length() <= maxLen) {
+            return s;
+        }
+        return s.substring(0, Math.max(0, maxLen - 1)) + "…";
+    }
+
 
     @Override
     public void onCreateContextMenu(@NonNull ContextMenu menu, View v, ContextMenuInfo menuInfo) {
@@ -1351,6 +1569,7 @@ public class ConversationFragment extends XmppFragment
             final MenuItem copyMessage = menu.findItem(R.id.copy_message);
             final MenuItem copyLink = menu.findItem(R.id.copy_link);
             final MenuItem quoteMessage = menu.findItem(R.id.quote_message);
+            final MenuItem replyToMessage = menu.findItem(R.id.reply_to_message);
             final MenuItem retryDecryption = menu.findItem(R.id.retry_decryption);
             final MenuItem correctMessage = menu.findItem(R.id.correct_message);
             final MenuItem shareWith = menu.findItem(R.id.share_with);
@@ -1419,6 +1638,7 @@ public class ConversationFragment extends XmppFragment
                 addReaction.setVisible(false);
                 correctMessage.setVisible(false);
             }
+            replyToMessage.setVisible(!showError); // TODO: is it ok to always show the Reply option?
             if (!m.isFileOrImage()
                     && !encrypted
                     && !m.isGeoUri()
@@ -1539,6 +1759,10 @@ public class ConversationFragment extends XmppFragment
             }
             case R.id.quote_message -> {
                 quoteMessage(selectedMessage);
+                yield true;
+            }
+            case R.id.reply_to_message -> {
+                replyToMessage(selectedMessage);
                 yield true;
             }
             case R.id.send_again -> {
@@ -2406,6 +2630,9 @@ public class ConversationFragment extends XmppFragment
         this.binding.textinput.setText("");
         this.binding.textinput.append(message.getBody());
         updateChatMsgHint();
+        if (!Strings.isNullOrEmpty(message.getReplyMessageUuid())) {
+            replyToMessageId(message.getReplyMessageUuid(), message.getReplyTo());
+        }
     }
 
     private void highlightInConference(final String nick) {
@@ -2469,6 +2696,8 @@ public class ConversationFragment extends XmppFragment
             if (!attachments.isEmpty()) {
                 outState.putParcelableArrayList(STATE_MEDIA_PREVIEWS, attachments);
             }
+            outState.putString(STATE_REPLY_MESSAGE_UUID, replyingMessageUuid);
+            outState.putString(STATE_REPLY_TO, replyingTo);
         }
     }
 
@@ -2490,6 +2719,8 @@ public class ConversationFragment extends XmppFragment
             pendingTakePhotoUri.push(Uri.parse(takePhotoUri));
         }
         pendingScrollState.push(savedInstanceState.getParcelable(STATE_SCROLL_POSITION));
+        pendingReplyMessageUuid.push(savedInstanceState.getString(STATE_REPLY_MESSAGE_UUID));
+        pendingReplyTo.push(savedInstanceState.getString(STATE_REPLY_TO));
     }
 
     @Override
@@ -2654,6 +2885,15 @@ public class ConversationFragment extends XmppFragment
                 .xmppConnectionService
                 .getNotificationService()
                 .setOpenConversation(this.conversation);
+
+        final String restoredReplyMessageUuid = pendingReplyMessageUuid.pop();
+        final String restoredReplyTo = pendingReplyTo.pop();
+        if (restoredReplyMessageUuid != null && restoredReplyTo != null) {
+            showReplyTarget(restoredReplyMessageUuid, restoredReplyTo);
+        } else {
+            updateReplyPreviewUi();
+        }
+
         return true;
     }
 
@@ -2977,6 +3217,7 @@ public class ConversationFragment extends XmppFragment
             conversation.setDraftMessage(null);
         }
         storeNextMessage();
+        clearReplyTarget();
         updateChatMsgHint();
         SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(requireContext());
         final boolean prefScrollToBottom =

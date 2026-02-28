@@ -39,6 +39,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.card.MaterialCardView;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
@@ -93,6 +94,8 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -877,7 +880,9 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         setAvatarDistance(viewHolder.messageBox(), viewHolder.getClass(), showAvatar);
         viewHolder.messageBox().setClipToOutline(true);
 
-        resetClickListener(viewHolder.messageBox(), viewHolder.messageBody());
+        resetClickListener(viewHolder.messageBox(), viewHolder.messageBody(), viewHolder.replyBox());
+
+        displayReplyBox(viewHolder, message, bubbleColor);
 
         viewHolder
                 .contactPicture()
@@ -1286,6 +1291,153 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         };
     }
 
+    private final Map<String, Integer> uuidIndex = new HashMap<>();
+    private final Map<String, Integer> uuidRemoteIndex = new HashMap<>();
+    private boolean uuidIndexDirty = true;
+    private boolean uuidRemoteIndexDirty = true;
+
+    @Override
+    public void notifyDataSetChanged() {
+        super.notifyDataSetChanged();
+        uuidIndexDirty = true;
+        uuidIndex.clear();
+    }
+
+    private void ensureUuidIndex() {
+        if (!uuidIndexDirty) return;
+        uuidIndex.clear();
+        for (int i = 0; i < getCount(); i++) {
+            final Message m = getItem(i);
+            final String u = (m == null) ? null : m.getUuid();
+            if (!Strings.isNullOrEmpty(u)) {
+                uuidIndex.put(u, i);
+            }
+        }
+        uuidIndexDirty = false;
+    }
+
+    private void ensureUuidRemoteIndex() {
+        if (!uuidRemoteIndexDirty) return;
+        uuidRemoteIndex.clear();
+        for (int i = 0; i < getCount(); i++) {
+            final Message m = getItem(i);
+            final String u = (m == null) ? null : m.getRemoteMsgId();
+            if (!Strings.isNullOrEmpty(u)) {
+                uuidRemoteIndex.put(u, i);
+            }
+        }
+        uuidRemoteIndexDirty = false;
+    }
+
+    private int findPositionByUuidForReply(@NonNull final String uuid) {
+        ensureUuidIndex();
+        ensureUuidRemoteIndex();
+        final Integer p = uuidIndex.get(uuid);
+        final Integer g = uuidRemoteIndex.get(uuid);
+        return p == null ? (g == null ? -1 : g) : p;
+    }
+
+    private @Nullable Message findMessageByUuidForReply(@NonNull final String uuid) {
+        final int pos = findPositionByUuidForReply(uuid);
+        return pos >= 0 ? getItem(pos) : null;
+    }
+
+    private CharSequence buildReplyPreview(@NonNull final Message referenced) {
+        if (referenced.isDeleted()) {
+            return activity.getText(R.string.file_deleted); // TODO: Should we have a more specific text?
+        }
+        final var preview = UIHelper.getMessagePreview(activity, referenced).first;
+        if (preview == null) return "";
+        return preview;
+    }
+
+    private static int marginStart(View v) {
+        final var lp = v.getLayoutParams();
+        if (lp instanceof ViewGroup.MarginLayoutParams mlp) return mlp.getMarginStart();
+        return 0;
+    }
+
+    private static int marginEnd(View v) {
+        final var lp = v.getLayoutParams();
+        if (lp instanceof ViewGroup.MarginLayoutParams mlp) return mlp.getMarginEnd();
+        return 0;
+    }
+
+    private void displayReplyBox(
+            final BubbleMessageItemViewHolder viewHolder,
+            final Message message,
+            final BubbleColor bubbleColor
+    ) {
+        final String replyToUuid = message.getReplyMessageUuid();
+        android.util.Log.e("CAWA_debug", "msg body=" + message.getBody() + ", uid=" + message.getUuid() + ", remoteUid=" + message.getRemoteMsgId());
+
+        if (Strings.isNullOrEmpty(replyToUuid)) {
+            viewHolder.replyBox().setVisibility(View.GONE);
+            viewHolder.replyBox().setOnClickListener(null);
+            viewHolder.replyBox().setMinimumWidth(0);
+            return;
+        }
+
+        // Avoid weird self-replies
+        if (replyToUuid.equals(message.getUuid()) || replyToUuid.equals(message.getRemoteMsgId())) {
+            viewHolder.replyBox().setVisibility(View.GONE);
+            viewHolder.replyBox().setOnClickListener(null);
+            viewHolder.replyBox().setMinimumWidth(0);
+            return;
+        }
+
+        final Message referenced = findMessageByUuidForReply(replyToUuid);
+        if (referenced == null) {
+            android.util.Log.e("MessageAdapter", "Unable to find referenced message for reply, with Uuid " + replyToUuid);
+            viewHolder.replyBox().setVisibility(View.GONE);
+            viewHolder.replyBox().setOnClickListener(null);
+            viewHolder.replyBox().setMinimumWidth(0);
+            return;
+        }
+
+        viewHolder.replyBox().setVisibility(View.VISIBLE);
+        viewHolder.replyBox().setMinimumWidth(0);
+        viewHolder.replyBox().post(() -> {
+            final View reply = viewHolder.replyBox();
+            final View parent = (View) reply.getParent();
+
+            final int parentW = parent.getWidth();
+            if (parentW <= 0) return;
+
+            int target =
+                    parentW
+                            - parent.getPaddingLeft() - parent.getPaddingRight()
+                            - marginStart(reply) - marginEnd(reply);
+
+            if (target > 0) {
+                reply.setMinimumWidth(target);
+                reply.requestLayout();
+            }
+        });
+
+        final String name = Strings.nullToEmpty(UIHelper.getMessageDisplayName(referenced));
+        final String title = name.isEmpty() ? "" : name;
+        viewHolder.replyTitle().setText(title);
+        viewHolder.replyBody().setText(buildReplyPreview(referenced));
+
+        final int variant = bubbleToOnSurfaceVariant(viewHolder.replyBody(), bubbleColor);
+        viewHolder.replyTitle().setTextColor(variant);
+        viewHolder.replyBody().setTextColor(variant);
+
+        if (viewHolder.replyBox() instanceof MaterialCardView card) {
+            final int bg = MaterialColors.getColor(card,
+                    com.google.android.material.R.attr.colorSurfaceContainerLow);
+            card.setCardBackgroundColor(bg);
+        }
+
+        viewHolder.replyBox().setOnClickListener(v -> {
+            final int pos = findPositionByUuidForReply(replyToUuid);
+            if (onReplyBoxClickedListener != null) {
+                onReplyBoxClickedListener.onReplyBoxClicked(replyToUuid, pos);
+            }
+        });
+    }
+
     private boolean showDetailedReaction(final Message message, final String emoji) {
         final var c = message.getConversation();
         if (c instanceof Conversation conversation && c.getMode() == Conversational.MODE_MULTI) {
@@ -1380,6 +1532,16 @@ public class MessageAdapter extends ArrayAdapter<Message> {
 
     public void setHighlightedTerm(List<String> terms) {
         this.highlightedTerm = terms == null ? null : StylingHelper.filterHighlightedWords(terms);
+    }
+
+    public interface OnReplyBoxClickedListener {
+        void onReplyBoxClicked(@NonNull String replyToUuid, int positionInAdapter);
+    }
+
+    private @Nullable OnReplyBoxClickedListener onReplyBoxClickedListener;
+
+    public void setOnReplyBoxClickedListener(@Nullable OnReplyBoxClickedListener listener) {
+        this.onReplyBoxClickedListener = listener;
     }
 
     public interface OnContactPictureClicked {
@@ -1550,6 +1712,13 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         protected abstract ImageView contactPicture();
 
         protected abstract ChipGroup reactions();
+
+        protected abstract View replyBox();
+
+        protected abstract TextView replyTitle();
+
+        protected abstract TextView replyBody();
+
     }
 
     private static class StartBubbleMessageItemViewHolder extends BubbleMessageItemViewHolder {
@@ -1623,6 +1792,22 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         protected ChipGroup reactions() {
             return this.binding.reactions;
         }
+
+        @Override
+        protected View replyBox() {
+            return this.binding.messageContent.replyBox;
+        }
+
+        @Override
+        protected TextView replyTitle() {
+            return this.binding.messageContent.replyTitle;
+        }
+
+        @Override
+        protected TextView replyBody() {
+            return this.binding.messageContent.replyBody;
+        }
+
     }
 
     private static class EndBubbleMessageItemViewHolder extends BubbleMessageItemViewHolder {
@@ -1693,6 +1878,22 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         protected ChipGroup reactions() {
             return this.binding.reactions;
         }
+
+        @Override
+        protected View replyBox() {
+            return this.binding.messageContent.replyBox;
+        }
+
+        @Override
+        protected TextView replyTitle() {
+            return this.binding.messageContent.replyTitle;
+        }
+
+        @Override
+        protected TextView replyBody() {
+            return this.binding.messageContent.replyBody;
+        }
+
     }
 
     private static class DateSeperatorMessageItemViewHolder extends MessageItemViewHolder {
