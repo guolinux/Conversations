@@ -90,6 +90,63 @@
 
                 </androidx.recyclerview.widget.RecyclerView>
 
+		<com.google.android.material.card.MaterialCardView
+		    android:id="@+id/reply_preview_container"
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_marginStart="0dp"
+		    android:layout_marginEnd="0dp"
+		    android:layout_marginBottom="6dp"
+		    android:clickable="true"
+		    android:focusable="true"
+		    android:foreground="?attr/selectableItemBackground"
+		    android:visibility="gone"
+		    app:cardElevation="0dp"
+		    app:cardUseCompatPadding="false"
+		    app:strokeWidth="1dp">
+
+		    <LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:padding="10dp"
+			android:gravity="center_vertical">
+
+			<LinearLayout
+			    android:layout_width="0dp"
+			    android:layout_height="wrap_content"
+			    android:layout_weight="1"
+			    android:orientation="vertical">
+
+			    <TextView
+				android:id="@+id/reply_preview_title"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:textStyle="bold"
+				android:maxLines="1"
+				android:ellipsize="end"
+				android:text="@string/reply_to_message" />
+
+			    <TextView
+				android:id="@+id/reply_preview_body"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:maxLines="1"
+				android:ellipsize="end"
+				android:text="@string/reply_preview" />
+			</LinearLayout>
+
+			<ImageButton
+			    android:id="@+id/reply_preview_close"
+			    android:layout_width="36dp"
+			    android:layout_height="36dp"
+			    android:background="?attr/selectableItemBackgroundBorderless"
+			    android:contentDescription="@string/delete_and_close"
+			    android:src="@drawable/ic_clear_24dp" />
+		    </LinearLayout>
+
+		</com.google.android.material.card.MaterialCardView>
+
                 <eu.siacs.conversations.ui.widget.EditMessage
                     android:id="@+id/textinput"
                     android:layout_width="match_parent"

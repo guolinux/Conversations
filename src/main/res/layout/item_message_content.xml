@@ -5,6 +5,63 @@
 
     <merge>
 
+	<com.google.android.material.card.MaterialCardView
+	    android:id="@+id/reply_box"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_marginBottom="6dp"
+	    android:layout_marginStart="6dp"
+	    android:layout_marginEnd="6dp"
+	    android:layout_marginTop="6dp"
+	    android:visibility="gone"
+	    app:cardElevation="0dp"
+	    app:cardBackgroundColor="@android:color/transparent"
+	    app:strokeWidth="1dp">
+
+	    <LinearLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal"
+		android:paddingStart="0dp"
+		android:paddingEnd="10dp"
+		android:paddingTop="4dp"
+		android:paddingBottom="6dp"
+		android:gravity="center_vertical">
+
+		<View
+		    android:id="@+id/reply_stripe"
+		    android:layout_width="3dp"
+		    android:layout_height="match_parent"
+		    android:layout_marginEnd="10dp" />
+
+		<LinearLayout
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:orientation="vertical">
+
+		    <TextView
+			android:id="@+id/reply_title"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:maxLines="1"
+			android:ellipsize="end"
+			android:textStyle="bold"
+			android:text="@string/reply_to_message" />
+
+		    <TextView
+			android:id="@+id/reply_body"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:maxLines="1"
+			android:ellipsize="end"
+			android:text="@string/reply_preview" />
+		</LinearLayout>
+
+	    </LinearLayout>
+
+	</com.google.android.material.card.MaterialCardView>
+
+
         <TextView
             android:id="@+id/message_body"
             android:layout_width="wrap_content"

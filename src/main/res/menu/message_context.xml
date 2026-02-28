@@ -38,6 +38,10 @@
         android:id="@+id/quote_message"
         android:title="@string/quote"
         android:visible="false" />
+    <item
+        android:id="@+id/reply_to_message"
+        android:title="@string/reply_to_message"
+        android:visible="false" />
 
     <item
         android:id="@+id/retry_decryption"
