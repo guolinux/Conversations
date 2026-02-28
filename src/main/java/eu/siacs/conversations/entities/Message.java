@@ -70,6 +70,8 @@ public class Message extends AbstractEntity
     public static final String ENCRYPTION = "encryption";
     public static final String STATUS = "status";
     public static final String TYPE = "type";
+    public static final String REPLY_MESSAGE_UUID = "replyMessageUuid";
+    public static final String REPLY_TO = "replyTo";
     public static final String CARBON = "carbon";
     public static final String OOB = "oob";
     public static final String EDITED = "edited";
@@ -98,6 +100,8 @@ public class Message extends AbstractEntity
     protected int encryption;
     protected int status;
     protected int type;
+    protected String replyMessageUuid = null;
+    protected String replyTo = null;
     protected boolean deleted = false;
     protected boolean carbon = false;
     protected boolean oob = false;
@@ -147,6 +151,8 @@ public class Message extends AbstractEntity
                 encryption,
                 status,
                 TYPE_TEXT,
+                null,
+                null,
                 false,
                 null,
                 null,
@@ -176,6 +182,8 @@ public class Message extends AbstractEntity
                 Message.ENCRYPTION_NONE,
                 status,
                 type,
+                null,
+                null,
                 false,
                 remoteMsgId,
                 null,
@@ -204,6 +212,8 @@ public class Message extends AbstractEntity
             final int encryption,
             final int status,
             final int type,
+            final String replyMessageUuid,
+            final String replyTo,
             final boolean carbon,
             final String remoteMsgId,
             final String relativeFilePath,
@@ -229,6 +239,8 @@ public class Message extends AbstractEntity
         this.encryption = encryption;
         this.status = status;
         this.type = type;
+        this.replyMessageUuid = replyMessageUuid;
+        this.replyTo = replyTo;
         this.carbon = carbon;
         this.remoteMsgId = remoteMsgId;
         this.relativeFilePath = relativeFilePath;
@@ -258,6 +270,8 @@ public class Message extends AbstractEntity
                 cursor.getInt(cursor.getColumnIndexOrThrow(ENCRYPTION)),
                 cursor.getInt(cursor.getColumnIndexOrThrow(STATUS)),
                 cursor.getInt(cursor.getColumnIndexOrThrow(TYPE)),
+                cursor.getString(cursor.getColumnIndexOrThrow(REPLY_MESSAGE_UUID)),
+                cursor.getString(cursor.getColumnIndexOrThrow(REPLY_TO)),
                 cursor.getInt(cursor.getColumnIndexOrThrow(CARBON)) > 0,
                 cursor.getString(cursor.getColumnIndexOrThrow(REMOTE_MSG_ID)),
                 cursor.getString(cursor.getColumnIndexOrThrow(RELATIVE_FILE_PATH)),
@@ -326,6 +340,8 @@ public class Message extends AbstractEntity
         values.put(ENCRYPTION, encryption);
         values.put(STATUS, status);
         values.put(TYPE, type);
+        values.put(REPLY_MESSAGE_UUID, replyMessageUuid);
+        values.put(REPLY_TO, replyTo);
         values.put(CARBON, carbon ? 1 : 0);
         values.put(REMOTE_MSG_ID, remoteMsgId);
         values.put(RELATIVE_FILE_PATH, relativeFilePath);
@@ -500,6 +516,22 @@ public class Message extends AbstractEntity
 
     public void setType(int type) {
         this.type = type;
+    }
+
+    public String getReplyMessageUuid() {
+        return this.replyMessageUuid;
+    }
+
+    public void setReplyMessageUuid(String uuid) {
+        this.replyMessageUuid = uuid;
+    }
+
+    public String getReplyTo() {
+        return this.replyTo;
+    }
+
+    public void setReplyTo(String replyTo) {
+        this.replyTo = replyTo;
     }
 
     public boolean isCarbon() {
