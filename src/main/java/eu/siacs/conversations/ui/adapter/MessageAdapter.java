@@ -1369,7 +1369,6 @@ public class MessageAdapter extends ArrayAdapter<Message> {
             final BubbleColor bubbleColor
     ) {
         final String replyToUuid = message.getReplyMessageUuid();
-        android.util.Log.e("CAWA_debug", "msg body=" + message.getBody() + ", uid=" + message.getUuid() + ", remoteUid=" + message.getRemoteMsgId());
 
         if (Strings.isNullOrEmpty(replyToUuid)) {
             viewHolder.replyBox().setVisibility(View.GONE);

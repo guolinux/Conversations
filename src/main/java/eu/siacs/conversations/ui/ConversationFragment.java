@@ -1358,9 +1358,9 @@ public class ConversationFragment extends XmppFragment
 
     private void replyToMessage(Message message) {
         if (message.getStatus() == Message.STATUS_RECEIVED)  {
-            replyToMessageId(message.getRemoteMsgId(), message.getDisplayName()); // cawa questo e' da fixare
+            replyToMessageId(message.getRemoteMsgId(), message.getDisplayName());
         } else {
-            replyToMessageId(message.getUuid(), message.getDisplayName()); // cawa questo e' da fixare
+            replyToMessageId(message.getUuid(), message.getDisplayName()); // We still need to understand what we want to display as name in the reply
         }
     }
 
