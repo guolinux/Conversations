@@ -13,6 +13,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.escape.CharEscaper;
+import com.google.common.primitives.Chars;
+import com.google.common.primitives.Ints;
 import eu.siacs.conversations.xmpp.Jid;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -104,7 +106,29 @@ public class MiniUri {
         return builder.build().asMap();
     }
 
-    public static String urlDecodeOrEmpty(final String input) {
+    private static String percentDecode(final @NonNull String encoded) {
+        if (Strings.isNullOrEmpty(encoded)) {
+            return encoded;
+        }
+        final var decoded = new StringBuilder();
+        for (int i = 0; i < encoded.length(); i++) {
+            final char c = encoded.charAt(i);
+            if (c == '%' && i + 2 < encoded.length()) {
+                final var value = Ints.tryParse(encoded.substring(i + 1, i + 3), 16);
+                if (value != null) {
+                    decoded.append(Chars.checkedCast(value));
+                    i += 2;
+                } else {
+                    decoded.append(c);
+                }
+            } else {
+                decoded.append(c);
+            }
+        }
+        return decoded.toString();
+    }
+
+    private static String urlDecodeOrEmpty(final String input) {
         try {
             return URLDecoder.decode(input, "UTF-8");
         } catch (final UnsupportedEncodingException | IllegalArgumentException e) {
@@ -112,7 +136,7 @@ public class MiniUri {
         }
     }
 
-    public static String urlEncode(final String input) {
+    private static String urlEncode(final String input) {
         try {
             return URLEncoder.encode(input, "UTF-8");
         } catch (final UnsupportedEncodingException e) {
@@ -243,6 +267,7 @@ public class MiniUri {
                 }
                 throw new IllegalArgumentException("HTTP URI does not match pattern");
             }
+            case "mumble" -> asMiniUriIfMatch(Patterns.URI_MUMBLE, uri);
             case "geo" -> asMiniUriIfMatch(Patterns.URI_GEO, uri);
             case "xmpp" -> new Xmpp(uri);
             case "taler" -> asMiniUriIfMatch(Patterns.URI_TALER, uri);
@@ -250,8 +275,9 @@ public class MiniUri {
             case "web+ap" -> {
                 if (Patterns.URI_WEB_AP.matcher(uri).matches()) {
                     final var webAp = new MiniUri(uri);
-                    // TODO once we have fragment support check that there aren't any
-                    if (Objects.nonNull(webAp.getAuthority()) && webAp.getParameter().isEmpty()) {
+                    if (Objects.nonNull(webAp.getAuthority())
+                            && webAp.getParameter().isEmpty()
+                            && Strings.isNullOrEmpty(webAp.getFragment())) {
                         yield webAp;
                     }
                 }
@@ -296,7 +322,7 @@ public class MiniUri {
             Preconditions.checkArgument(getScheme().equals("xmpp"), "scheme must be xmpp");
             Preconditions.checkArgument(
                     Objects.isNull(getAuthority()), "authorities are not supported");
-            final var path = urlDecodeOrEmpty(getPath());
+            final var path = MiniUri.percentDecode(getPath());
             if (Strings.isNullOrEmpty(path)) {
                 if (this.getParameter().isEmpty()) {
                     throw new IllegalArgumentException(
@@ -426,7 +452,7 @@ public class MiniUri {
                     final var isJoin = action != null && action.equals("j");
                     final Jid jid;
                     try {
-                        jid = Jid.ofUserInput(urlDecodeOrEmpty(Iterables.getLast(pathSegments)));
+                        jid = Jid.ofUserInput(percentDecode(Iterables.getLast(pathSegments)));
                     } catch (final IllegalArgumentException e) {
                         return this;
                     }
