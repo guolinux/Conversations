@@ -28,6 +28,7 @@ import eu.siacs.conversations.xmpp.XmppConnection;
 import eu.siacs.conversations.xmpp.jingle.RtpCapability;
 import eu.siacs.conversations.xmpp.manager.HttpUploadManager;
 import eu.siacs.conversations.xmpp.manager.RosterManager;
+import java.util.Arrays;
 import java.util.Collection;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -343,9 +344,11 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
         return this.lastErrorStatus;
     }
 
-    public void setStatus(final State status) {
+    public void setStatus(@org.jspecify.annotations.NonNull final State status) {
         this.status = status;
-        if (status.isError || status == State.ONLINE) {
+        if (status.isError
+                || (Arrays.asList(State.ONLINE, State.AIRPLANE_MODE, State.NO_INTERNET)
+                        .contains(status))) {
             this.lastErrorStatus = status;
         }
     }
@@ -700,6 +703,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
         REGISTRATION_NOT_SUPPORTED(true, false),
         REGISTRATION_PLEASE_WAIT(true, false),
         REGISTRATION_INVALID_TOKEN(true, false),
+        REGISTRATION_INVALID_CAPTCHA(true, false),
         REGISTRATION_PASSWORD_TOO_WEAK(true, false),
         TLS_ERROR,
         TLS_ERROR_DOMAIN,
@@ -761,6 +765,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
                 case REGISTRATION_CONFLICT -> R.string.account_status_regis_conflict;
                 case REGISTRATION_SUCCESSFUL -> R.string.account_status_regis_success;
                 case REGISTRATION_NOT_SUPPORTED -> R.string.account_status_regis_not_sup;
+                case REGISTRATION_INVALID_CAPTCHA -> R.string.account_status_regis_invalid_captcha;
                 case REGISTRATION_INVALID_TOKEN -> R.string.account_status_regis_invalid_token;
                 case TLS_ERROR -> R.string.account_status_tls_error;
                 case TLS_ERROR_DOMAIN -> R.string.account_status_tls_error_domain;

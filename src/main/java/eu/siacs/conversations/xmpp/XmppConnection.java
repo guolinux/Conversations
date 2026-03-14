@@ -2019,6 +2019,10 @@ public class XmppConnection implements Runnable {
                         if (t instanceof TimeoutException) {
                             return;
                         }
+                        Log.d(
+                                Config.LOGTAG,
+                                account.getJid().asBareJid() + ": could not register",
+                                t);
                         if (t
                                 instanceof
                                 RegistrationManager.RegistrationFailedException exception) {
@@ -2864,6 +2868,7 @@ public class XmppConnection implements Runnable {
     public void triggerConnectionTimeout() {
 
         // TODO not triggering timeout while waiting for captcha input
+        // TODO check for airplane mode?
 
         final var duration = getConnectionDuration();
         Log.d(

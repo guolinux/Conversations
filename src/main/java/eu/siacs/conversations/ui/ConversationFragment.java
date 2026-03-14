@@ -73,6 +73,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import de.gultsch.common.Linkify;
 import de.gultsch.common.MiniUri;
@@ -138,6 +139,7 @@ import eu.siacs.conversations.xmpp.jingle.OngoingRtpSession;
 import eu.siacs.conversations.xmpp.jingle.RtpCapability;
 import eu.siacs.conversations.xmpp.manager.BlockingManager;
 import eu.siacs.conversations.xmpp.manager.ChatStateManager;
+import eu.siacs.conversations.xmpp.manager.EntityTimeManager;
 import eu.siacs.conversations.xmpp.manager.HttpUploadManager;
 import eu.siacs.conversations.xmpp.manager.JingleManager;
 import eu.siacs.conversations.xmpp.manager.MessageArchiveManager;
@@ -150,6 +152,7 @@ import im.conversations.android.xmpp.model.state.Composing;
 import im.conversations.android.xmpp.model.state.Paused;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -160,6 +163,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConversationFragment extends XmppFragment
@@ -3319,10 +3323,16 @@ public class ConversationFragment extends XmppFragment
         }
         if (conversation.getMode() == Conversation.MODE_SINGLE) {
             final var account = conversation.getAccount();
+            final var connection = account.getXmppConnection();
             final var state =
-                    account.getXmppConnection()
+                    connection
                             .getManager(ChatStateManager.class)
                             .getIncoming(conversation.getAddress());
+            final var zonedDateTimeFuture =
+                    connection
+                            .getManager(EntityTimeManager.class)
+                            .getZonedDateTime(conversation.getAddress());
+            final var zonedDateTime = getOrNull(zonedDateTimeFuture);
             if (Objects.equals(state, Composing.class)) {
                 this.messageList.add(
                         Message.createStatusMessage(
@@ -3336,6 +3346,13 @@ public class ConversationFragment extends XmppFragment
                                         R.string.contact_has_stopped_typing,
                                         conversation.getName())));
             } else {
+                if (zonedDateTime != null && EntityTimeManager.isNightTime(zonedDateTime)) {
+                    final var localTimeMessage =
+                            Message.createStatusMessage(
+                                    conversation, MessageAdapter.LOCAL_TIME_BODY);
+                    localTimeMessage.setTime(zonedDateTime.getOffset().getTotalSeconds());
+                    this.messageList.add(localTimeMessage);
+                }
                 for (int i = this.messageList.size() - 1; i >= 0; --i) {
                     final Message message = this.messageList.get(i);
                     if (message.getType() != Message.TYPE_STATUS) {
@@ -3448,6 +3465,17 @@ public class ConversationFragment extends XmppFragment
             }
             this.messageList.add(statusMessage);
         }
+    }
+
+    private static ZonedDateTime getOrNull(final ListenableFuture<ZonedDateTime> future) {
+        if (future.isDone()) {
+            try {
+                return future.get();
+            } catch (final ExecutionException | InterruptedException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private void stopScrolling() {
