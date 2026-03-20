@@ -451,10 +451,6 @@
     <string name="pref_presence_settings">Tillgänglighet</string>
     <string name="pref_away_when_screen_off">Borta när enheten är låst</string>
     <string name="pref_away_when_screen_off_summary">Visa som Borta när enheten är låst</string>
-    <string name="pref_dnd_on_silent_mode">Upptagen i tyst läge</string>
-    <string name="pref_dnd_on_silent_mode_summary">Visa som upptagen när enheten är i tyst läge</string>
-    <string name="pref_treat_vibrate_as_silent">Behandla vibrera-läget som tyst läge</string>
-    <string name="pref_treat_vibrate_as_dnd_summary">Visa som upptagen när enheten är satt till att endast vibrera</string>
     <string name="pref_show_connection_options">Värdnamn &amp; Port</string>
     <string name="pref_show_connection_options_summary">Visa utökade anslutningsinställningar vid kontokonfiguration</string>
     <string name="hostname_example">xmpp.exempel.se</string>
@@ -1045,7 +1041,7 @@
     <string name="edit_nick">Redigera smeknamn</string>
     <string name="pref_title_bubbles">Chattbubblor</string>
     <string name="pref_large_font">Stort typsnitt</string>
-    <string name="pref_category_e2ee">Ände-till-ände-kryptering</string>
+    <string name="pref_category_e2ee">Totalsträckskryptering</string>
     <string name="change_notification_settings">Ändra aviseringsinställningar</string>
     <string name="server_info_login_mechanism">Inloggningsmekanism</string>
     <string name="custom_notifications">Anpassade aviseringar</string>

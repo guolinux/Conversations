@@ -28,14 +28,15 @@ public class AppSettings {
 
     public static final String KEEP_FOREGROUND_SERVICE = "enable_foreground_service";
     public static final String AWAY_WHEN_SCREEN_IS_OFF = "away_when_screen_off";
-    public static final String TREAT_VIBRATE_AS_SILENT = "treat_vibrate_as_silent";
+    public static final String DND_SYNC_SYSTEM = "dnd_on_silent_mode";
+    public static final String DND_INCLUDE_SILENT_MODES = "treat_vibrate_as_silent";
     public static final String GRACE_PERIOD_LENGTH = "grace_period_length";
-    public static final String DND_ON_SILENT_MODE = "dnd_on_silent_mode";
     public static final String MANUALLY_CHANGE_PRESENCE = "manually_change_presence";
     public static final String BLIND_TRUST_BEFORE_VERIFICATION = "btbv";
     public static final String AUTOMATIC_MESSAGE_DELETION = "automatic_message_deletion";
     public static final String BROADCAST_LAST_ACTIVITY = "last_activity";
     public static final String SEND_CHAT_STATES = "chat_states";
+    public static final String ENTITY_TIME = "entity_time";
     public static final String THEME = "theme";
     public static final String DYNAMIC_COLORS = "dynamic_colors";
     public static final String SHOW_DYNAMIC_TAGS = "show_dynamic_tags";
@@ -184,13 +185,13 @@ public class AppSettings {
         return !isUserManagedAvailability();
     }
 
-    public boolean isDndOnSilentMode() {
-        return getBooleanPreference(AppSettings.DND_ON_SILENT_MODE, R.bool.dnd_on_silent_mode);
+    public boolean isDndSyncSystem() {
+        return getBooleanPreference(AppSettings.DND_SYNC_SYSTEM, R.bool.dnd_sync_system);
     }
 
-    public boolean isTreatVibrateAsSilent() {
+    public boolean isDndIncludeSilentMode() {
         return getBooleanPreference(
-                AppSettings.TREAT_VIBRATE_AS_SILENT, R.bool.treat_vibrate_as_silent);
+                AppSettings.DND_INCLUDE_SILENT_MODES, R.bool.dnd_include_silent_modes);
     }
 
     public boolean isAwayWhenScreenLocked() {
@@ -209,6 +210,10 @@ public class AppSettings {
 
     public boolean isSendChatStates() {
         return getBooleanPreference(SEND_CHAT_STATES, R.bool.chat_states);
+    }
+
+    public boolean isEntityTime() {
+        return getBooleanPreference(ENTITY_TIME, R.bool.entity_time);
     }
 
     public boolean isExtendedConnectionOptions() {
