@@ -60,13 +60,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.json.JSONObject;
 import org.jxmpp.jid.parts.Localpart;
 import org.jxmpp.stringprep.XmppStringprepException;
-import org.whispersystems.libsignal.IdentityKey;
-import org.whispersystems.libsignal.IdentityKeyPair;
-import org.whispersystems.libsignal.InvalidKeyException;
-import org.whispersystems.libsignal.SignalProtocolAddress;
-import org.whispersystems.libsignal.state.PreKeyRecord;
-import org.whispersystems.libsignal.state.SessionRecord;
-import org.whispersystems.libsignal.state.SignedPreKeyRecord;
+import org.signal.libsignal.protocol.IdentityKey;
+import org.signal.libsignal.protocol.IdentityKeyPair;
+import org.signal.libsignal.protocol.InvalidKeyException;
+import org.signal.libsignal.protocol.InvalidMessageException;
+import org.signal.libsignal.protocol.SignalProtocolAddress;
+import org.signal.libsignal.protocol.state.PreKeyRecord;
+import org.signal.libsignal.protocol.state.SessionRecord;
+import org.signal.libsignal.protocol.state.SignedPreKeyRecord;
 
 public class DatabaseBackend extends SQLiteOpenHelper {
 
@@ -1999,7 +2000,7 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                                         cursor.getString(
                                                 cursor.getColumnIndex(SQLiteAxolotlStore.KEY)),
                                         Base64.DEFAULT));
-            } catch (IOException e) {
+            } catch (InvalidMessageException e) {
                 cursor.close();
                 throw new AssertionError(e);
             }
@@ -2134,7 +2135,7 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                                         cursor.getString(
                                                 cursor.getColumnIndex(SQLiteAxolotlStore.KEY)),
                                         Base64.DEFAULT));
-            } catch (IOException e) {
+            } catch (InvalidMessageException e) {
                 throw new AssertionError(e);
             }
         }
@@ -2197,7 +2198,7 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                                         cursor.getString(
                                                 cursor.getColumnIndex(SQLiteAxolotlStore.KEY)),
                                         Base64.DEFAULT));
-            } catch (IOException e) {
+            } catch (InvalidMessageException e) {
                 throw new AssertionError(e);
             }
         }
@@ -2228,7 +2229,7 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                                         cursor.getString(
                                                 cursor.getColumnIndex(SQLiteAxolotlStore.KEY)),
                                         Base64.DEFAULT)));
-            } catch (IOException ignored) {
+            } catch (InvalidMessageException ignored) {
             }
         }
         cursor.close();
@@ -2350,22 +2351,12 @@ public class DatabaseBackend extends SQLiteOpenHelper {
         Cursor cursor = getIdentityKeyCursor(db, account, name, true);
         if (cursor.getCount() != 0) {
             cursor.moveToFirst();
-            try {
-                identityKeyPair =
-                        new IdentityKeyPair(
-                                Base64.decode(
-                                        cursor.getString(
-                                                cursor.getColumnIndex(SQLiteAxolotlStore.KEY)),
-                                        Base64.DEFAULT));
-            } catch (InvalidKeyException e) {
-                Log.d(
-                        Config.LOGTAG,
-                        AxolotlService.getLogprefix(account)
-                                + "Encountered invalid IdentityKey in database for account"
-                                + account.getJid().asBareJid()
-                                + ", address: "
-                                + name);
-            }
+            identityKeyPair =
+                    new IdentityKeyPair(
+                            Base64.decode(
+                                    cursor.getString(
+                                            cursor.getColumnIndex(SQLiteAxolotlStore.KEY)),
+                                    Base64.DEFAULT));
         }
         cursor.close();
 

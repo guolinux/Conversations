@@ -56,18 +56,19 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.whispersystems.libsignal.IdentityKey;
-import org.whispersystems.libsignal.IdentityKeyPair;
-import org.whispersystems.libsignal.InvalidKeyException;
-import org.whispersystems.libsignal.InvalidKeyIdException;
-import org.whispersystems.libsignal.SessionBuilder;
-import org.whispersystems.libsignal.SignalProtocolAddress;
-import org.whispersystems.libsignal.UntrustedIdentityException;
-import org.whispersystems.libsignal.ecc.ECPublicKey;
-import org.whispersystems.libsignal.state.PreKeyBundle;
-import org.whispersystems.libsignal.state.PreKeyRecord;
-import org.whispersystems.libsignal.state.SignedPreKeyRecord;
-import org.whispersystems.libsignal.util.KeyHelper;
+import org.signal.libsignal.protocol.IdentityKey;
+import org.signal.libsignal.protocol.IdentityKeyPair;
+import org.signal.libsignal.protocol.InvalidKeyException;
+import org.signal.libsignal.protocol.InvalidKeyIdException;
+import org.signal.libsignal.protocol.SessionBuilder;
+import org.signal.libsignal.protocol.SignalProtocolAddress;
+import org.signal.libsignal.protocol.UntrustedIdentityException;
+import org.signal.libsignal.protocol.ecc.Curve;
+import org.signal.libsignal.protocol.ecc.ECKeyPair;
+import org.signal.libsignal.protocol.ecc.ECPublicKey;
+import org.signal.libsignal.protocol.state.PreKeyBundle;
+import org.signal.libsignal.protocol.state.PreKeyRecord;
+import org.signal.libsignal.protocol.state.SignedPreKeyRecord;
 
 public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 
@@ -81,6 +82,26 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 
     private static final int NUM_KEYS_TO_PUBLISH = 100;
     private static final int publishTriesThreshold = 3;
+
+    private static SignedPreKeyRecord generateSignedPreKey(
+            IdentityKeyPair identityKeyPair, int signedPreKeyId) throws InvalidKeyException {
+        ECKeyPair keyPair = Curve.generateKeyPair();
+        byte[] signature =
+                Curve.calculateSignature(
+                        identityKeyPair.getPrivateKey(), keyPair.getPublicKey().serialize());
+        return new SignedPreKeyRecord(
+                signedPreKeyId, System.currentTimeMillis(), keyPair, signature);
+    }
+
+    private static List<PreKeyRecord> generatePreKeys(int start, int count) {
+        List<PreKeyRecord> records = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            int preKeyId = ((start + i - 1) % (Integer.MAX_VALUE - 1)) + 1;
+            ECKeyPair keyPair = Curve.generateKeyPair();
+            records.add(new PreKeyRecord(preKeyId, keyPair));
+        }
+        return records;
+    }
 
     private final Account account;
     private final XmppConnectionService mXmppConnectionService;
@@ -711,7 +732,6 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                                 AxolotlService.getLogprefix(account)
                                         + "Received invalid bundle:"
                                         + response);
-                        bundle = new PreKeyBundle(-1, -1, -1, null, -1, null, null, null);
                         flush = true;
                     }
                     if (keys == null) {
@@ -742,6 +762,9 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                         SignedPreKeyRecord signedPreKeyRecord;
                         int numSignedPreKeys = axolotlStore.getSignedPreKeysCount();
                         try {
+                            if (flush) {
+                                throw new InvalidKeyIdException("forcing bundle flush");
+                            }
                             signedPreKeyRecord =
                                     axolotlStore.loadSignedPreKey(bundle.getSignedPreKeyId());
                             if (flush
@@ -757,7 +780,7 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                                                 + (numSignedPreKeys + 1)
                                                 + " to PEP.");
                                 signedPreKeyRecord =
-                                        KeyHelper.generateSignedPreKey(
+                                        generateSignedPreKey(
                                                 identityKeyPair, numSignedPreKeys + 1);
                                 axolotlStore.storeSignedPreKey(
                                         signedPreKeyRecord.getId(), signedPreKeyRecord);
@@ -771,7 +794,7 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                                             + (numSignedPreKeys + 1)
                                             + " to PEP.");
                             signedPreKeyRecord =
-                                    KeyHelper.generateSignedPreKey(
+                                    generateSignedPreKey(
                                             identityKeyPair, numSignedPreKeys + 1);
                             axolotlStore.storeSignedPreKey(
                                     signedPreKeyRecord.getId(), signedPreKeyRecord);
@@ -797,7 +820,7 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                         int newKeys = NUM_KEYS_TO_PUBLISH - preKeyRecords.size();
                         if (newKeys > 0) {
                             List<PreKeyRecord> newRecords =
-                                    KeyHelper.generatePreKeys(
+                                    generatePreKeys(
                                             axolotlStore.getCurrentPreKeyId() + 1, newKeys);
                             preKeyRecords.addAll(newRecords);
                             for (PreKeyRecord record : newRecords) {
@@ -869,15 +892,21 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                 account.getXmppConnection().getFeatures().pepPublishOptions()
                         ? PublishOptions.openAccess()
                         : null;
-        final Iq publish =
-                mXmppConnectionService
-                        .getIqGenerator()
-                        .publishBundles(
-                                signedPreKeyRecord,
-                                axolotlStore.getIdentityKeyPair().getPublicKey(),
-                                preKeyRecords,
-                                getOwnDeviceId(),
-                                publishOptions);
+        final Iq publish;
+        try {
+            publish =
+                    mXmppConnectionService
+                            .getIqGenerator()
+                            .publishBundles(
+                                    signedPreKeyRecord,
+                                    axolotlStore.getIdentityKeyPair().getPublicKey(),
+                                    preKeyRecords,
+                                    getOwnDeviceId(),
+                                    publishOptions);
+        } catch (InvalidKeyException e) {
+            Log.e(Config.LOGTAG, getLogprefix(account) + "Failed to publish bundles", e);
+            return;
+        }
         Log.d(
                 Config.LOGTAG,
                 AxolotlService.getLogprefix(account)
@@ -1244,9 +1273,10 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                                 Config.LOGTAG,
                                 AxolotlService.getLogprefix(account)
                                         + "Received preKey IQ packet, processing...");
-                        final List<PreKeyBundle> preKeyBundleList = IqParser.preKeys(packet);
+                        final Map<Integer, ECPublicKey> preKeyPublics =
+                                IqParser.preKeys(packet);
                         final PreKeyBundle bundle = IqParser.bundle(packet);
-                        if (preKeyBundleList.isEmpty() || bundle == null) {
+                        if (preKeyPublics.isEmpty() || bundle == null) {
                             Log.e(
                                     Config.LOGTAG,
                                     AxolotlService.getLogprefix(account)
@@ -1262,28 +1292,19 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                                             "Unable to build session. IQ Packet Invalid"));
                             return;
                         }
-                        Random random = new Random();
-                        final PreKeyBundle preKey =
-                                preKeyBundleList.get(random.nextInt(preKeyBundleList.size()));
-                        if (preKey == null) {
-                            // should never happen
-                            fetchStatusMap.put(address, FetchStatus.ERROR);
-                            finishBuildingSessionsFromPEP(address);
-                            if (callback != null) {
-                                callback.onSessionBuildFailed();
-                            }
-                            sessionSettableFuture.setException(
-                                    new CryptoFailedException(
-                                            "Unable to build session. No suitable PreKey found"));
-                            return;
-                        }
+                        final List<Integer> preKeyIds =
+                                new ArrayList<>(preKeyPublics.keySet());
+                        final Random random = new Random();
+                        final int selectedPreKeyId =
+                                preKeyIds.get(random.nextInt(preKeyIds.size()));
+                        final ECPublicKey selectedPreKey = preKeyPublics.get(selectedPreKeyId);
 
                         final PreKeyBundle preKeyBundle =
                                 new PreKeyBundle(
                                         0,
                                         address.getDeviceId(),
-                                        preKey.getPreKeyId(),
-                                        preKey.getPreKey(),
+                                        selectedPreKeyId,
+                                        selectedPreKey,
                                         bundle.getSignedPreKeyId(),
                                         bundle.getSignedPreKey(),
                                         bundle.getSignedPreKeySignature(),
@@ -1400,11 +1421,15 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                     SignalProtocolAddress address =
                             new SignalProtocolAddress(jid.toString(), foreignId);
                     if (sessions.get(address) == null) {
-                        IdentityKey identityKey =
-                                axolotlStore
-                                        .loadSession(address)
-                                        .getSessionState()
-                                        .getRemoteIdentityKey();
+                        IdentityKey identityKey;
+                        try {
+                            identityKey =
+                                    axolotlStore
+                                            .loadSession(address)
+                                            .getRemoteIdentityKey();
+                        } catch (IllegalStateException e) {
+                            identityKey = null;
+                        }
                         if (identityKey != null) {
                             Log.d(
                                     Config.LOGTAG,
@@ -1450,7 +1475,7 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
                     new SignalProtocolAddress(account.getJid().asBareJid().toString(), ownId);
             if (sessions.get(address) == null) {
                 IdentityKey identityKey =
-                        axolotlStore.loadSession(address).getSessionState().getRemoteIdentityKey();
+                        axolotlStore.loadSession(address).getRemoteIdentityKey();
                 if (identityKey != null) {
                     Log.d(
                             Config.LOGTAG,
@@ -1870,8 +1895,13 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
     }
 
     private XmppAxolotlSession recreateUncachedSession(SignalProtocolAddress address) {
-        IdentityKey identityKey =
-                axolotlStore.loadSession(address).getSessionState().getRemoteIdentityKey();
+        IdentityKey identityKey;
+        try {
+            identityKey = axolotlStore.loadSession(address).getRemoteIdentityKey();
+        } catch (IllegalStateException e) {
+            Log.w(Config.LOGTAG, account.getJid().asBareJid() + ": no session for " + address);
+            return null;
+        }
         return (identityKey != null)
                 ? new XmppAxolotlSession(account, axolotlStore, address, identityKey)
                 : null;
@@ -2189,7 +2219,7 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
             for (Integer deviceId : deviceIds) {
                 SignalProtocolAddress axolotlAddress = new SignalProtocolAddress(bareJid, deviceId);
                 IdentityKey identityKey =
-                        store.loadSession(axolotlAddress).getSessionState().getRemoteIdentityKey();
+                        store.loadSession(axolotlAddress).getRemoteIdentityKey();
                 if (Config.X509_VERIFICATION) {
                     X509Certificate certificate =
                             store.getFingerprintCertificate(

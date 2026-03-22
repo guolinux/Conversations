@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.whispersystems.libsignal.IdentityKey;
+import org.signal.libsignal.protocol.IdentityKey;
 
 public class TrustKeysActivity extends OmemoActivity implements OnKeyStatusUpdated {
     private final Map<String, Boolean> ownKeysToTrust = new HashMap<>();

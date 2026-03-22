@@ -7,20 +7,27 @@ import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.utils.CryptoHelper;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.whispersystems.libsignal.IdentityKey;
-import org.whispersystems.libsignal.IdentityKeyPair;
-import org.whispersystems.libsignal.InvalidKeyIdException;
-import org.whispersystems.libsignal.SignalProtocolAddress;
-import org.whispersystems.libsignal.ecc.Curve;
-import org.whispersystems.libsignal.ecc.ECKeyPair;
-import org.whispersystems.libsignal.state.PreKeyRecord;
-import org.whispersystems.libsignal.state.SessionRecord;
-import org.whispersystems.libsignal.state.SignalProtocolStore;
-import org.whispersystems.libsignal.state.SignedPreKeyRecord;
-import org.whispersystems.libsignal.util.KeyHelper;
+import java.util.UUID;
+import org.signal.libsignal.protocol.IdentityKey;
+import org.signal.libsignal.protocol.IdentityKeyPair;
+import org.signal.libsignal.protocol.InvalidKeyIdException;
+import org.signal.libsignal.protocol.NoSessionException;
+import org.signal.libsignal.protocol.SignalProtocolAddress;
+import org.signal.libsignal.protocol.ecc.Curve;
+import org.signal.libsignal.protocol.ecc.ECKeyPair;
+import org.signal.libsignal.protocol.ecc.ECPublicKey;
+import org.signal.libsignal.protocol.groups.state.SenderKeyRecord;
+import org.signal.libsignal.protocol.state.KyberPreKeyRecord;
+import org.signal.libsignal.protocol.state.PreKeyRecord;
+import org.signal.libsignal.protocol.state.SessionRecord;
+import org.signal.libsignal.protocol.state.SignalProtocolStore;
+import org.signal.libsignal.protocol.state.SignedPreKeyRecord;
+import org.signal.libsignal.protocol.util.KeyHelper;
 
 public class SQLiteAxolotlStore implements SignalProtocolStore {
 
@@ -207,12 +214,14 @@ public class SQLiteAxolotlStore implements SignalProtocolStore {
      * @return true on success
      */
     @Override
-    public boolean saveIdentity(
+    public IdentityChange saveIdentity(
             final SignalProtocolAddress address, final IdentityKey identityKey) {
-        if (!mXmppConnectionService
-                .databaseBackend
-                .loadIdentityKeys(account, address.getName())
-                .contains(identityKey)) {
+        final boolean existing =
+                mXmppConnectionService
+                        .databaseBackend
+                        .loadIdentityKeys(account, address.getName())
+                        .contains(identityKey);
+        if (!existing) {
             String fingerprint = CryptoHelper.bytesToHex(identityKey.getPublicKey().serialize());
             FingerprintStatus status = getFingerprintStatus(fingerprint);
             if (status == null) {
@@ -236,7 +245,14 @@ public class SQLiteAxolotlStore implements SignalProtocolStore {
                     account, address.getName(), identityKey, status);
             trustCache.remove(fingerprint);
         }
-        return true;
+        final boolean hadPrevious =
+                !mXmppConnectionService
+                        .databaseBackend
+                        .loadIdentityKeys(account, address.getName())
+                        .isEmpty();
+        return hadPrevious && !existing
+                ? IdentityChange.REPLACED_EXISTING
+                : IdentityChange.NEW_OR_UNCHANGED;
     }
 
     /**
@@ -255,6 +271,16 @@ public class SQLiteAxolotlStore implements SignalProtocolStore {
     public boolean isTrustedIdentity(
             SignalProtocolAddress address, IdentityKey identityKey, Direction direction) {
         return true;
+    }
+
+    @Override
+    public IdentityKey getIdentity(SignalProtocolAddress address) {
+        final Set<IdentityKey> keys =
+                mXmppConnectionService.databaseBackend.loadIdentityKeys(account, address.getName());
+        if (keys.isEmpty()) {
+            return null;
+        }
+        return keys.iterator().next();
     }
 
     public FingerprintStatus getFingerprintStatus(String fingerprint) {
@@ -306,6 +332,21 @@ public class SQLiteAxolotlStore implements SignalProtocolStore {
         SessionRecord session =
                 mXmppConnectionService.databaseBackend.loadSession(this.account, address);
         return (session != null) ? session : new SessionRecord();
+    }
+
+    @Override
+    public List<SessionRecord> loadExistingSessions(List<SignalProtocolAddress> addresses)
+            throws NoSessionException {
+        List<SessionRecord> sessions = new ArrayList<>(addresses.size());
+        for (SignalProtocolAddress address : addresses) {
+            SessionRecord session =
+                    mXmppConnectionService.databaseBackend.loadSession(this.account, address);
+            if (session == null) {
+                throw new NoSessionException("No session for " + address);
+            }
+            sessions.add(session);
+        }
+        return sessions;
     }
 
     /**
@@ -512,5 +553,50 @@ public class SQLiteAxolotlStore implements SignalProtocolStore {
     public void preVerifyFingerprint(Account account, String name, String fingerprint) {
         mXmppConnectionService.databaseBackend.storePreVerification(
                 account, name, fingerprint, FingerprintStatus.createInactiveVerified());
+    }
+
+    /**
+     * SenderKeyStore (not used by OMEMO)
+     */
+
+    @Override
+    public void storeSenderKey(
+            SignalProtocolAddress sender, UUID distributionId, SenderKeyRecord record) {
+        // Not used by OMEMO
+    }
+
+    @Override
+    public SenderKeyRecord loadSenderKey(SignalProtocolAddress sender, UUID distributionId) {
+        // Not used by OMEMO
+        return null;
+    }
+
+    /**
+     * KyberPreKeyStore (not used by OMEMO)
+     */
+
+    @Override
+    public KyberPreKeyRecord loadKyberPreKey(int kyberPreKeyId) throws InvalidKeyIdException {
+        throw new InvalidKeyIdException("Kyber pre-keys are not supported by OMEMO");
+    }
+
+    @Override
+    public List<KyberPreKeyRecord> loadKyberPreKeys() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void storeKyberPreKey(int kyberPreKeyId, KyberPreKeyRecord record) {
+        // Not used by OMEMO
+    }
+
+    @Override
+    public boolean containsKyberPreKey(int kyberPreKeyId) {
+        return false;
+    }
+
+    @Override
+    public void markKyberPreKeyUsed(int kyberPreKeyId) {
+        // Not used by OMEMO
     }
 }

@@ -84,7 +84,7 @@ dependencies {
     implementation 'org.minidns:minidns-client:1.1.1'
     implementation 'org.minidns:minidns-dnssec:1.1.1'
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
-    implementation 'org.whispersystems:signal-protocol-java:2.6.2'
+    implementation 'org.signal:libsignal-android:0.72.1'
     conversationsPlaystoreImplementation 'com.android.installreferrer:installreferrer:2.2'
     quicksyImplementation 'io.michaelrocks:libphonenumber-android:9.0.24'
     quicksyImplementation "dev.paseto:jpaseto-api:0.7.0"
@@ -110,6 +110,7 @@ ext {
 android {
     namespace 'eu.siacs.conversations'
     compileSdk 36
+    ndkVersion '28.0.13004108'
 
     defaultConfig {
         minSdkVersion 23
@@ -262,6 +263,12 @@ android {
     packagingOptions {
         resources {
             excludes += ['META-INF/BCKEY.DSA', 'META-INF/BCKEY.SF', 'META-INF/versions/9/OSGI-INF/MANIFEST.MF']
+            // Exclude desktop native binaries bundled in the libsignal-android AAR
+            excludes += ['**/*.dylib', '**/*.dll']
+        }
+        jniLibs {
+            // Exclude the libsignal testing JNI library from release builds
+            excludes += ['**/libsignal_jni_testing.so']
         }
     }
     lint {

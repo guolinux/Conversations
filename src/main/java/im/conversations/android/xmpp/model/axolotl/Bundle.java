@@ -6,8 +6,9 @@ import im.conversations.android.xmpp.model.Extension;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.whispersystems.libsignal.ecc.ECPublicKey;
-import org.whispersystems.libsignal.state.PreKeyRecord;
+import org.signal.libsignal.protocol.InvalidKeyException;
+import org.signal.libsignal.protocol.ecc.ECPublicKey;
+import org.signal.libsignal.protocol.state.PreKeyRecord;
 
 @XmlElement
 public class Bundle extends Extension {
@@ -49,7 +50,8 @@ public class Bundle extends Extension {
         signedPreKeySignature.setContent(signature);
     }
 
-    public void addPreKeys(final List<PreKeyRecord> preKeyRecords) {
+    public void addPreKeys(final List<PreKeyRecord> preKeyRecords)
+            throws InvalidKeyException {
         final var preKeys = this.addExtension(new PreKeys());
         for (final PreKeyRecord preKeyRecord : preKeyRecords) {
             final var preKey = preKeys.addExtension(new PreKey());

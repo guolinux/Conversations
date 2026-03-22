@@ -33,18 +33,16 @@ import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.whispersystems.libsignal.IdentityKey;
-import org.whispersystems.libsignal.InvalidKeyException;
-import org.whispersystems.libsignal.ecc.Curve;
-import org.whispersystems.libsignal.ecc.ECPublicKey;
-import org.whispersystems.libsignal.state.PreKeyBundle;
+import org.signal.libsignal.protocol.IdentityKey;
+import org.signal.libsignal.protocol.InvalidKeyException;
+import org.signal.libsignal.protocol.ecc.ECPublicKey;
+import org.signal.libsignal.protocol.state.PreKeyBundle;
 
 public class IqParser extends AbstractParser implements Consumer<Iq> {
 
@@ -113,7 +111,7 @@ public class IqParser extends AbstractParser implements Consumer<Iq> {
             return null;
         }
         try {
-            publicKey = Curve.decodePoint(base64decode(signedPreKeyPublic), 0);
+            publicKey = new ECPublicKey(base64decode(signedPreKeyPublic), 0);
         } catch (final IllegalArgumentException | InvalidKeyException e) {
             Log.e(
                     Config.LOGTAG,
@@ -201,7 +199,7 @@ public class IqParser extends AbstractParser implements Consumer<Iq> {
             Integer preKeyId = null;
             try {
                 preKeyId = Integer.valueOf(preKeyPublicElement.getAttribute("preKeyId"));
-                final ECPublicKey preKeyPublic = Curve.decodePoint(base64decode(preKey), 0);
+                final ECPublicKey preKeyPublic = new ECPublicKey(base64decode(preKey), 0);
                 preKeyRecords.put(preKeyId, preKeyPublic);
             } catch (NumberFormatException e) {
                 Log.e(
@@ -285,7 +283,7 @@ public class IqParser extends AbstractParser implements Consumer<Iq> {
         return new PreKeyBundle(
                 0,
                 0,
-                0,
+                PreKeyBundle.NULL_PRE_KEY_ID,
                 null,
                 signedPreKeyId,
                 signedPreKeyPublic,
@@ -293,17 +291,9 @@ public class IqParser extends AbstractParser implements Consumer<Iq> {
                 identityKey);
     }
 
-    public static List<PreKeyBundle> preKeys(final Iq preKeys) {
-        List<PreKeyBundle> bundles = new ArrayList<>();
-        Map<Integer, ECPublicKey> preKeyPublics = preKeyPublics(preKeys);
-        if (preKeyPublics != null) {
-            for (Integer preKeyId : preKeyPublics.keySet()) {
-                ECPublicKey preKeyPublic = preKeyPublics.get(preKeyId);
-                bundles.add(new PreKeyBundle(0, 0, preKeyId, preKeyPublic, 0, null, null, null));
-            }
-        }
-
-        return bundles;
+    public static Map<Integer, ECPublicKey> preKeys(final Iq preKeys) {
+        final Map<Integer, ECPublicKey> preKeyPublics = preKeyPublics(preKeys);
+        return preKeyPublics != null ? preKeyPublics : new HashMap<>();
     }
 
     @Override

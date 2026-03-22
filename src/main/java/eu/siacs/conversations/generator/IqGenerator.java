@@ -14,10 +14,11 @@ import im.conversations.android.xmpp.model.stanza.Iq;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Set;
-import org.whispersystems.libsignal.IdentityKey;
-import org.whispersystems.libsignal.ecc.ECPublicKey;
-import org.whispersystems.libsignal.state.PreKeyRecord;
-import org.whispersystems.libsignal.state.SignedPreKeyRecord;
+import org.signal.libsignal.protocol.IdentityKey;
+import org.signal.libsignal.protocol.InvalidKeyException;
+import org.signal.libsignal.protocol.ecc.ECPublicKey;
+import org.signal.libsignal.protocol.state.PreKeyRecord;
+import org.signal.libsignal.protocol.state.SignedPreKeyRecord;
 
 public class IqGenerator extends AbstractGenerator {
 
@@ -90,7 +91,8 @@ public class IqGenerator extends AbstractGenerator {
             final IdentityKey identityKey,
             final Set<PreKeyRecord> preKeyRecords,
             final int deviceId,
-            Bundle publishOptions) {
+            Bundle publishOptions)
+            throws InvalidKeyException {
         final Element item = new Element("item");
         item.setAttribute("id", "current");
         final Element bundle = item.addChild("bundle", AxolotlService.PEP_PREFIX);
