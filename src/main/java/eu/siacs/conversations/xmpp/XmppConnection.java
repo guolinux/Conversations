@@ -349,8 +349,15 @@ public class XmppConnection implements Runnable {
             final boolean useTor = useTorSetting || account.isOnion();
 
             // WebSocket connection path (RFC 7395)
-            final String websocketUrl = account.getWebSocketUrl();
-            if (!Strings.isNullOrEmpty(websocketUrl)) {
+            final boolean useWebsocket = account.isOptionSet(Account.OPTION_USE_WEBSOCKET);
+            String websocketUrl = account.getWebSocketUrl();
+            if (useWebsocket && Strings.isNullOrEmpty(websocketUrl)) {
+                // Auto-discover via XEP-0156 host-meta
+                Log.d(Config.LOGTAG, account.getJid().asBareJid()
+                        + ": WebSocket enabled but no URL set, attempting host-meta discovery");
+                websocketUrl = Resolver.discoverWebSocketUrl(account.getServer());
+            }
+            if (useWebsocket && !Strings.isNullOrEmpty(websocketUrl)) {
                 Log.d(
                         Config.LOGTAG,
                         account.getJid().asBareJid() + ": connecting via WebSocket: " + websocketUrl);

@@ -493,6 +493,7 @@
     <string name="account_settings_port">Port</string>
     <string name="account_settings_websocket_url">WebSocket URL (wss://…)</string>
     <string name="not_a_valid_websocket_url">Not a valid WebSocket URL</string>
+    <string name="use_websocket">Use WebSocket connection</string>
     <string name="hostname_or_onion">Server- or .onion-address</string>
     <string name="not_a_valid_port">This is not a valid port number</string>
     <string name="not_valid_hostname">This is not a valid hostname</string>

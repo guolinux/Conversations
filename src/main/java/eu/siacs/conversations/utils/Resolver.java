@@ -98,6 +98,56 @@ public class Resolver {
 
     public static void clearCache() {}
 
+    /**
+     * Discovers the WebSocket URL for an XMPP domain via XEP-0156 host-meta (RFC 7395 §4).
+     * Fetches {@code https://<domain>/.well-known/host-meta} and looks for a link with
+     * {@code rel="urn:xmpp:alt-connections:websocket"}.
+     *
+     * @return the WebSocket URL (wss://…), or null if not found
+     */
+    public static String discoverWebSocketUrl(final String domain) {
+        final okhttp3.OkHttpClient client =
+                new okhttp3.OkHttpClient.Builder()
+                        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                        .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                        .followRedirects(true)
+                        .build();
+        final String url = "https://" + domain + "/.well-known/host-meta";
+        final okhttp3.Request request = new okhttp3.Request.Builder().url(url).build();
+        try (final okhttp3.Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) {
+                Log.d(Config.LOGTAG, "host-meta fetch failed for " + domain + ": " + response.code());
+                return null;
+            }
+            final String body = response.body().string();
+            // Parse XRD for rel="urn:xmpp:alt-connections:websocket"
+            final java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                    "<Link[^>]+rel=['\"]urn:xmpp:alt-connections:websocket['\"][^>]+href=['\"]([^'\"]+)['\"]",
+                    java.util.regex.Pattern.CASE_INSENSITIVE);
+            final java.util.regex.Matcher matcher = pattern.matcher(body);
+            if (matcher.find()) {
+                final String wsUrl = matcher.group(1);
+                Log.d(Config.LOGTAG, "discovered WebSocket URL for " + domain + ": " + wsUrl);
+                return wsUrl;
+            }
+            // Try alternate attribute order (href before rel)
+            final java.util.regex.Pattern altPattern = java.util.regex.Pattern.compile(
+                    "<Link[^>]+href=['\"]([^'\"]+)['\"][^>]+rel=['\"]urn:xmpp:alt-connections:websocket['\"]",
+                    java.util.regex.Pattern.CASE_INSENSITIVE);
+            final java.util.regex.Matcher altMatcher = altPattern.matcher(body);
+            if (altMatcher.find()) {
+                final String wsUrl = altMatcher.group(1);
+                Log.d(Config.LOGTAG, "discovered WebSocket URL for " + domain + ": " + wsUrl);
+                return wsUrl;
+            }
+            Log.d(Config.LOGTAG, "no WebSocket link in host-meta for " + domain);
+            return null;
+        } catch (final Exception e) {
+            Log.d(Config.LOGTAG, "host-meta discovery failed for " + domain + ": " + e.getMessage());
+            return null;
+        }
+    }
+
     public static boolean useDirectTls(final int port) {
         return port == 443 || port == XMPP_PORT_DIRECT_TLS;
     }
