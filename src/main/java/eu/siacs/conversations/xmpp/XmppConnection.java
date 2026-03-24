@@ -602,6 +602,9 @@ public class XmppConnection implements Runnable {
         } catch (final UnknownHostException
                 | ConnectException
                 | SocksSocketFactory.HostNotFoundException e) {
+            if (e instanceof ConnectException && tryWebSocketFallback()) {
+                return;
+            }
             final var hint =
                     new NetworkManager(mXmppConnectionService.getApplicationContext()).getHint();
             final Account.State target =
@@ -738,6 +741,52 @@ public class XmppConnection implements Runnable {
             }
         }
         return success;
+    }
+
+    /**
+     * Attempts WebSocket connection as a fallback after TCP connection failure. Uses host-meta
+     * discovery (XEP-0156) to find the WebSocket endpoint. Only attempted once per connection
+     * cycle and skipped if WebSocket was already tried or if using Tor.
+     *
+     * @return true if the WebSocket fallback succeeded and the stream was processed
+     */
+    private boolean tryWebSocketFallback() {
+        if (account.isOptionSet(Account.OPTION_USE_WEBSOCKET)) {
+            // WebSocket was already the primary path; don't retry
+            return false;
+        }
+        if (account.isOnion()) {
+            return false;
+        }
+        Log.d(Config.LOGTAG, account.getJid().asBareJid()
+                + ": TCP connection failed, attempting WebSocket fallback via host-meta");
+        final String wsUrl = Resolver.discoverWebSocketUrl(account.getServer());
+        if (Strings.isNullOrEmpty(wsUrl)) {
+            Log.d(Config.LOGTAG, account.getJid().asBareJid()
+                    + ": no WebSocket endpoint discovered");
+            return false;
+        }
+        try {
+            Log.d(Config.LOGTAG, account.getJid().asBareJid()
+                    + ": WebSocket fallback connecting to: " + wsUrl);
+            final OkHttpClient wsClient =
+                    new OkHttpClient.Builder()
+                            .connectTimeout(Config.SOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+                            .readTimeout(0, TimeUnit.MILLISECONDS)
+                            .build();
+            final WebSocketTransport transport =
+                    WebSocketTransport.connect(wsClient, wsUrl, Config.SOCKET_TIMEOUT / 1000);
+            if (startXmppOverWebSocket(transport)) {
+                processStream();
+                return true;
+            } else {
+                transport.close();
+            }
+        } catch (final Exception e) {
+            Log.d(Config.LOGTAG, account.getJid().asBareJid()
+                    + ": WebSocket fallback failed: " + e.getMessage());
+        }
+        return false;
     }
 
     private SSLSocketFactory getSSLSocketFactory()
