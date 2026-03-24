@@ -54,6 +54,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
     public static final String PINNED_CHANNEL_BINDING = "pinned_channel_binding";
     public static final String FAST_MECHANISM = "fast_mechanism";
     public static final String FAST_TOKEN = "fast_token";
+    public static final String WEBSOCKET_URL = "websocket_url";
 
     public static final int OPTION_DISABLED = 1;
     public static final int OPTION_REGISTER = 2;
@@ -81,6 +82,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
     protected String avatar;
     protected String hostname = null;
     protected int port = 5222;
+    protected String websocketUrl = null;
     protected boolean online = false;
     private String rosterVersion;
     private String displayName = null;
@@ -105,6 +107,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
                 null,
                 null,
                 Resolver.XMPP_PORT_STARTTLS,
+                null,
                 im.conversations.android.xmpp.model.stanza.Presence.Availability.ONLINE,
                 null,
                 null,
@@ -124,6 +127,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
             String displayName,
             String hostname,
             int port,
+            String websocketUrl,
             final im.conversations.android.xmpp.model.stanza.Presence.Availability status,
             String statusMessage,
             final String pinnedMechanism,
@@ -140,6 +144,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
         this.displayName = displayName;
         this.hostname = hostname;
         this.port = port;
+        this.websocketUrl = websocketUrl;
         this.presenceStatus = status;
         this.presenceStatusMessage = statusMessage;
         this.pinnedMechanism = pinnedMechanism;
@@ -187,6 +192,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
                 cursor.getString(cursor.getColumnIndexOrThrow(DISPLAY_NAME)),
                 cursor.getString(cursor.getColumnIndexOrThrow(HOSTNAME)),
                 cursor.getInt(cursor.getColumnIndexOrThrow(PORT)),
+                cursor.getString(cursor.getColumnIndexOrThrow(WEBSOCKET_URL)),
                 im.conversations.android.xmpp.model.stanza.Presence.Availability.valueOfShown(
                         cursor.getString(cursor.getColumnIndexOrThrow(STATUS))),
                 cursor.getString(cursor.getColumnIndexOrThrow(STATUS_MESSAGE)),
@@ -324,6 +330,14 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public String getWebSocketUrl() {
+        return Strings.emptyToNull(Strings.nullToEmpty(this.websocketUrl).trim());
+    }
+
+    public void setWebSocketUrl(final String websocketUrl) {
+        this.websocketUrl = websocketUrl;
     }
 
     public State getStatus() {
@@ -521,6 +535,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
         values.put(DISPLAY_NAME, displayName);
         values.put(HOSTNAME, hostname);
         values.put(PORT, port);
+        values.put(WEBSOCKET_URL, websocketUrl);
         values.put(STATUS, presenceStatus.toShowString());
         values.put(STATUS_MESSAGE, presenceStatusMessage);
         values.put(RESOURCE, jid.getResource());

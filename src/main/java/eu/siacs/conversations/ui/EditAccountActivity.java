@@ -289,10 +289,23 @@ public class EditAccountActivity extends OmemoActivity
                     }
                     final String hostname;
                     int numericPort = 5222;
+                    final String websocketUrl;
                     if (mShowOptions) {
                         hostname = CharMatcher.whitespace().removeFrom(binding.hostname.getText());
                         final String port =
                                 CharMatcher.whitespace().removeFrom(binding.port.getText());
+                        websocketUrl =
+                                CharMatcher.whitespace()
+                                        .removeFrom(binding.websocketUrl.getText());
+                        if (!websocketUrl.isEmpty()
+                                && !websocketUrl.startsWith("wss://")
+                                && !websocketUrl.startsWith("ws://")) {
+                            binding.websocketUrlLayout.setError(
+                                    getString(R.string.not_a_valid_websocket_url));
+                            binding.websocketUrl.requestFocus();
+                            removeErrorsOnAllBut(binding.websocketUrlLayout);
+                            return;
+                        }
                         if (Resolver.invalidHostname(hostname)) {
                             binding.hostnameLayout.setError(getString(R.string.not_valid_hostname));
                             binding.hostname.requestFocus();
@@ -319,6 +332,7 @@ public class EditAccountActivity extends OmemoActivity
                         }
                     } else {
                         hostname = null;
+                        websocketUrl = null;
                     }
 
                     if (jid.getLocal() == null) {
@@ -340,6 +354,7 @@ public class EditAccountActivity extends OmemoActivity
                         mAccount.setJid(jid);
                         mAccount.setPort(numericPort);
                         mAccount.setHostname(hostname);
+                        mAccount.setWebSocketUrl(websocketUrl);
                         binding.accountJidLayout.setError(null);
                         mAccount.setPassword(password);
                         mAccount.setOption(Account.OPTION_REGISTER, registerNewAccount);
@@ -362,11 +377,13 @@ public class EditAccountActivity extends OmemoActivity
                         mAccount = new Account(jid.asBareJid(), password);
                         mAccount.setPort(numericPort);
                         mAccount.setHostname(hostname);
+                        mAccount.setWebSocketUrl(websocketUrl);
                         mAccount.setOption(Account.OPTION_REGISTER, registerNewAccount);
                         xmppConnectionService.createAccount(mAccount);
                     }
                     binding.hostnameLayout.setError(null);
                     binding.portLayout.setError(null);
+                    binding.websocketUrlLayout.setError(null);
                     if (mAccount.isOnion()) {
                         Toast.makeText(
                                         EditAccountActivity.this,
@@ -703,7 +720,9 @@ public class EditAccountActivity extends OmemoActivity
                         .equals(this.binding.accountPassword.getText().toString())
                 || !this.mAccount.getHostname().equals(this.binding.hostname.getText().toString())
                 || !String.valueOf(this.mAccount.getPort())
-                        .equals(this.binding.port.getText().toString());
+                        .equals(this.binding.port.getText().toString())
+                || !com.google.common.base.Strings.nullToEmpty(this.mAccount.getWebSocketUrl())
+                        .equals(this.binding.websocketUrl.getText().toString());
     }
 
     protected boolean jidEdited() {
@@ -900,6 +919,7 @@ public class EditAccountActivity extends OmemoActivity
                                         "show_connection_options",
                                         getResources().getBoolean(R.bool.show_connection_options)));
         this.binding.namePort.setVisibility(mShowOptions ? View.VISIBLE : View.GONE);
+        this.binding.websocketUrlLayout.setVisibility(mShowOptions ? View.VISIBLE : View.GONE);
         if (mForceRegister != null) {
             this.binding.accountRegisterNew.setVisibility(View.GONE);
         }
@@ -1194,7 +1214,13 @@ public class EditAccountActivity extends OmemoActivity
             this.binding.hostname.getEditableText().append(this.mAccount.getHostname());
             this.binding.port.setText("");
             this.binding.port.getEditableText().append(String.valueOf(this.mAccount.getPort()));
+            this.binding.websocketUrl.setText("");
+            final String wsUrl = this.mAccount.getWebSocketUrl();
+            if (wsUrl != null) {
+                this.binding.websocketUrl.getEditableText().append(wsUrl);
+            }
             this.binding.namePort.setVisibility(mShowOptions ? View.VISIBLE : View.GONE);
+            this.binding.websocketUrlLayout.setVisibility(mShowOptions ? View.VISIBLE : View.GONE);
         }
 
         final boolean editable =

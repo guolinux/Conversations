@@ -51,6 +51,16 @@ public class TagWriter {
         this.outputStream = new StreamElementWriter(outputStream);
     }
 
+    /**
+     * Sets the default namespace for top-level stream elements. Set to null for WebSocket mode
+     * (RFC 7395) so that every element includes an explicit xmlns declaration.
+     */
+    public void setDefaultNamespace(final String namespace) {
+        if (this.outputStream != null) {
+            this.outputStream.setDefaultNamespace(namespace);
+        }
+    }
+
     public void beginDocument() throws IOException {
         if (outputStream == null) {
             throw new IOException("output stream was null");

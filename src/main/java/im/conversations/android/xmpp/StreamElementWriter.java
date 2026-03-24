@@ -31,8 +31,19 @@ public class StreamElementWriter extends BufferedWriter {
     private static final Collection<Character> ALLOWED_CONTROL_CHARS =
             Arrays.asList('\n', '\t', '\r');
 
+    private String defaultNamespace = Namespace.JABBER_CLIENT;
+
     public StreamElementWriter(final OutputStream outputStream) {
         super(new OutputStreamWriter(outputStream));
+    }
+
+    /**
+     * Sets the default (implicit) namespace for top-level elements. Over TCP this is
+     * "jabber:client" (inherited from the stream element). Over WebSocket (RFC 7395) this should
+     * be set to null so every element explicitly declares its namespace.
+     */
+    public void setDefaultNamespace(final String namespace) {
+        this.defaultNamespace = namespace;
     }
 
     public void write(final Tag tag, final String namespace) throws IOException {
@@ -72,7 +83,7 @@ public class StreamElementWriter extends BufferedWriter {
     }
 
     public void write(final StreamElement streamElement) throws IOException {
-        this.write(streamElement, Namespace.JABBER_CLIENT);
+        this.write(streamElement, defaultNamespace);
     }
 
     public void write(final Tag tag) throws IOException {

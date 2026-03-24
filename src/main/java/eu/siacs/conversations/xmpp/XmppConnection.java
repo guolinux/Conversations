@@ -117,6 +117,8 @@ import im.conversations.android.xmpp.model.stanza.Iq;
 import im.conversations.android.xmpp.model.stanza.Presence;
 import im.conversations.android.xmpp.model.stanza.Stanza;
 import im.conversations.android.xmpp.model.streams.Features;
+import im.conversations.android.xmpp.model.framing.Close;
+import im.conversations.android.xmpp.model.framing.Open;
 import im.conversations.android.xmpp.model.streams.Stream;
 import im.conversations.android.xmpp.model.streams.StreamError;
 import im.conversations.android.xmpp.model.streams.StreamErrorCondition;
@@ -168,6 +170,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import org.xmlpull.v1.XmlPullParserException;
 
 public class XmppConnection implements Runnable {
@@ -184,6 +187,7 @@ public class XmppConnection implements Runnable {
     private final AppSettings appSettings;
     private final XmppConnectionService mXmppConnectionService;
     private Socket socket;
+    private WebSocketTransport webSocketTransport;
     private XmlReader tagReader;
     private TagWriter tagWriter = new TagWriter();
     private boolean shouldAuthenticate = true;
@@ -343,6 +347,36 @@ public class XmppConnection implements Runnable {
             final boolean useTorSetting = appSettings.isUseTor();
             final boolean extended = appSettings.isExtendedConnectionOptions();
             final boolean useTor = useTorSetting || account.isOnion();
+
+            // WebSocket connection path (RFC 7395)
+            final String websocketUrl = account.getWebSocketUrl();
+            if (!Strings.isNullOrEmpty(websocketUrl)) {
+                Log.d(
+                        Config.LOGTAG,
+                        account.getJid().asBareJid() + ": connecting via WebSocket: " + websocketUrl);
+                final OkHttpClient wsClient =
+                        new OkHttpClient.Builder()
+                                .connectTimeout(Config.SOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+                                .readTimeout(0, TimeUnit.MILLISECONDS)
+                                .build();
+                final WebSocketTransport transport =
+                        WebSocketTransport.connect(wsClient, websocketUrl, Config.SOCKET_TIMEOUT / 1000);
+                try {
+                    if (startXmppOverWebSocket(transport)) {
+                        processStream();
+                    } else {
+                        transport.close();
+                        throw new StateChangingException(Account.State.STREAM_OPENING_ERROR);
+                    }
+                } catch (final InterruptedException e) {
+                    Log.d(Config.LOGTAG, account.getJid().asBareJid()
+                            + ": thread was interrupted before beginning WebSocket stream");
+                    return;
+                } catch (final Exception e) {
+                    transport.close();
+                    throw new IOException("Could not start WebSocket stream", e);
+                }
+            } else
             // TODO collapse Tor usage into normal connection code path
             if (useTor) {
                 final var seeOtherHost = this.seeOtherHostResolverResult;
@@ -648,6 +682,57 @@ public class XmppConnection implements Runnable {
         return success;
     }
 
+    /**
+     * Starts xmpp protocol over WebSocket (RFC 7395). No XML declaration is sent; framing uses
+     * {@code <open/>} / {@code <close/>} instead of {@code <stream:stream>}.
+     */
+    private boolean startXmppOverWebSocket(final WebSocketTransport transport) throws Exception {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException();
+        }
+        this.lastConnectionStarted = SystemClock.elapsedRealtime();
+        this.webSocketTransport = transport;
+        this.socket = null;
+        this.tagReader = new XmlReader();
+        if (tagWriter != null) {
+            tagWriter.forceClose();
+        }
+        this.tagWriter = new TagWriter();
+        this.tagWriter.setOutputStream(transport.getOutputStream());
+        this.tagReader.setInputStream(transport.getInputStream());
+        // RFC 7395: no <?xml?> declaration over WebSocket
+        // RFC 7395 §3.3.3: each message must be a standalone XML document with all namespaces
+        this.tagWriter.setDefaultNamespace(null);
+        features.encryptionEnabled = transport.isSecure();
+        // Quick start is not supported over WebSocket (no direct TLS socket access)
+        sendStartStream(false, true);
+        final Tag tag = tagReader.readTag();
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException();
+        }
+        final Tag.Start start;
+        if (tag instanceof Tag.Start s) {
+            start = s;
+        } else {
+            return false;
+        }
+        // Over WebSocket, server responds with <open xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>
+        final boolean success = start.is(Open.class);
+        if (success) {
+            // <open/> is self-closing; consume the trailing end tag from the parser
+            final Tag endTag = tagReader.readTag();
+            if (!(endTag instanceof Tag.End)) {
+                Log.d(Config.LOGTAG, account.getJid().asBareJid()
+                        + ": unexpected tag after <open/>: " + endTag);
+            }
+            final var from = start.getAttribute("from");
+            if (from == null || !from.equals(account.getServer())) {
+                throw new StateChangingException(Account.State.HOST_UNKNOWN);
+            }
+        }
+        return success;
+    }
+
     private SSLSocketFactory getSSLSocketFactory()
             throws NoSuchAlgorithmException, KeyManagementException {
         final SSLContext sc = SSLSockets.getSSLContext();
@@ -694,6 +779,16 @@ public class XmppConnection implements Runnable {
         while (nextTag instanceof Tag.Start startTag) {
             if (startTag.is(StreamError.class)) {
                 processStreamError(tagReader.readElement(startTag, StreamError.class));
+            } else if (startTag.is(Close.class)) {
+                // RFC 7395 §3.6: WebSocket stream close
+                final var close = tagReader.readElement(startTag, Close.class);
+                final String seeOtherUri = close.getSeeOtherUri();
+                if (seeOtherUri != null) {
+                    Log.d(Config.LOGTAG, account.getJid().asBareJid()
+                            + ": received see-other-uri: " + seeOtherUri);
+                }
+                streamCountDownLatch.countDown();
+                throw new EndOfStreamException();
             } else if (startTag.is(im.conversations.android.xmpp.model.streams.Features.class)) {
                 processStreamFeatures(startTag);
             } else if (startTag.is(Proceed.class)) {
@@ -984,7 +1079,15 @@ public class XmppConnection implements Runnable {
             tagReader.reset();
             sendStartStream(false, true);
             final Tag tag = tagReader.readTag();
-            if (tag instanceof Tag.Start startTag && startTag.is(Stream.class)) {
+            if (isWebSocket()) {
+                if (tag instanceof Tag.Start startTag && startTag.is(Open.class)) {
+                    // <open/> is self-closing; consume trailing end tag
+                    tagReader.readTag();
+                    processStream();
+                } else {
+                    throw new StateChangingException(Account.State.STREAM_OPENING_ERROR);
+                }
+            } else if (tag instanceof Tag.Start startTag && startTag.is(Stream.class)) {
                 processStream();
             } else {
                 throw new StateChangingException(Account.State.STREAM_OPENING_ERROR);
@@ -1562,7 +1665,10 @@ public class XmppConnection implements Runnable {
                 tagReader.readElement(
                         currentTag, im.conversations.android.xmpp.model.streams.Features.class);
         final boolean isSecure = isSecure();
-        if (streamFeatures.hasExtension(StartTls.class) && !features.encryptionEnabled) {
+        // RFC 7395 §3.9: over WebSocket, TLS is at the WebSocket layer; ignore STARTTLS
+        if (!isWebSocket()
+                && streamFeatures.hasExtension(StartTls.class)
+                && !features.encryptionEnabled) {
             sendStartTLS();
             return;
         }
@@ -1681,8 +1787,13 @@ public class XmppConnection implements Runnable {
 
     private boolean isSecure() {
         return (features.encryptionEnabled && this.socket instanceof SSLSocket)
+                || (webSocketTransport != null && webSocketTransport.isSecure())
                 || Config.ALLOW_NON_TLS_CONNECTIONS
                 || account.isDirectToOnion();
+    }
+
+    private boolean isWebSocket() {
+        return this.webSocketTransport != null;
     }
 
     private void authenticate(final SaslMechanism.Version version) throws IOException {
@@ -2507,6 +2618,14 @@ public class XmppConnection implements Runnable {
     }
 
     private void sendStartStream(final boolean from, final boolean flush) throws IOException {
+        if (isWebSocket()) {
+            sendWebSocketOpen(from, flush);
+        } else {
+            sendTcpStartStream(from, flush);
+        }
+    }
+
+    private void sendTcpStartStream(final boolean from, final boolean flush) throws IOException {
         final var attrBuilder = new ImmutableMap.Builder<String, String>();
         attrBuilder.put("to", account.getServer());
         if (from) {
@@ -2517,6 +2636,17 @@ public class XmppConnection implements Runnable {
         attrBuilder.put("xmlns:stream", Namespace.STREAMS);
         final Tag stream = new Tag.Start(Stream.ID, attrBuilder.buildOrThrow());
         tagWriter.writeTag(stream, flush);
+    }
+
+    private void sendWebSocketOpen(final boolean from, final boolean flush) throws IOException {
+        final Open open = new Open();
+        open.setAttribute("to", account.getServer());
+        if (from) {
+            open.setAttribute("from", account.getJid().asBareJid().toString());
+        }
+        open.setAttribute("version", "1.0");
+        open.setAttribute("xml:lang", LocalizedContent.STREAM_LANGUAGE);
+        tagWriter.writeElement(open);
     }
 
     private static String createNewResource() {
@@ -2711,6 +2841,11 @@ public class XmppConnection implements Runnable {
     }
 
     private void forceCloseSocket() {
+        final var ws = this.webSocketTransport;
+        if (ws != null) {
+            ws.close();
+            this.webSocketTransport = null;
+        }
         FileBackend.close(this.socket);
         FileBackend.close(this.tagReader);
     }
@@ -2738,7 +2873,11 @@ public class XmppConnection implements Runnable {
             try {
                 currentTagWriter.await(1, TimeUnit.SECONDS);
                 Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": sending stream close");
-                currentTagWriter.writeTag(new Tag.End(Stream.ID));
+                if (isWebSocket()) {
+                    currentTagWriter.writeElement(new Close());
+                } else {
+                    currentTagWriter.writeTag(new Tag.End(Stream.ID));
+                }
                 if (streamCountDownLatch != null) {
                     if (!streamCountDownLatch.await(1, TimeUnit.SECONDS)) {
                         Log.d(

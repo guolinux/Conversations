@@ -138,6 +138,21 @@
                                 </com.google.android.material.textfield.TextInputLayout>
                             </LinearLayout>
 
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/websocket_url_layout"
+                                android:layout_width="fill_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8sp"
+                                android:hint="@string/account_settings_websocket_url"
+                                android:visibility="gone">
+
+                                <EditText
+                                    android:id="@+id/websocket_url"
+                                    android:layout_width="fill_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textUri" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
                             <CheckBox
                                 android:id="@+id/account_register_new"
                                 android:layout_width="wrap_content"

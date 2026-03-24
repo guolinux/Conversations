@@ -71,7 +71,7 @@ import org.whispersystems.libsignal.state.SignedPreKeyRecord;
 public class DatabaseBackend extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "history";
-    private static final int DATABASE_VERSION = 54;
+    private static final int DATABASE_VERSION = 55;
 
     private static boolean requiresMessageIndexRebuild = false;
     private static DatabaseBackend instance = null;
@@ -403,6 +403,8 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                         + Account.FAST_MECHANISM
                         + " TEXT,"
                         + Account.FAST_TOKEN
+                        + " TEXT,"
+                        + Account.WEBSOCKET_URL
                         + " TEXT,"
                         + Account.PORT
                         + " NUMBER DEFAULT 5222)");
@@ -1087,6 +1089,14 @@ public class DatabaseBackend extends SQLiteOpenHelper {
             db.execSQL(CREATE_CAPS_CACHE_TABLE);
             db.execSQL(CREATE_CAPS_CACHE_INDEX_CAPS);
             db.execSQL(CREATE_CAPS_CACHE_INDEX_CAPS2);
+        }
+        if (oldVersion < 55 && newVersion >= 55) {
+            db.execSQL(
+                    "ALTER TABLE "
+                            + Account.TABLENAME
+                            + " ADD COLUMN "
+                            + Account.WEBSOCKET_URL
+                            + " TEXT");
         }
     }
 
