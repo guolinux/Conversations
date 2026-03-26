@@ -200,10 +200,10 @@ public class WebSocketTransport {
 
     /**
      * An OutputStream that captures all written bytes and sends them as a single WebSocket text
-     * message on each flush(). This aligns with RFC 7395's requirement that each WebSocket message
-     * is a standalone XML document.
+     * message on each {@code sendMessage()} call. Regular {@code flush()} is a no-op to prevent
+     * premature sends from BufferedWriter/OutputStreamWriter internal flushing.
      */
-    private static class WebSocketOutputStream extends OutputStream {
+    public static class WebSocketOutputStream extends OutputStream {
         private volatile WebSocket webSocket;
         private final java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
 
@@ -224,10 +224,15 @@ public class WebSocketTransport {
 
         @Override
         public synchronized void flush() throws IOException {
+            // No-op: prevent BufferedWriter/OutputStreamWriter internal flushes from
+            // triggering premature WebSocket message sends. Use sendMessage() instead.
+        }
+
+        public synchronized void sendMessage() throws IOException {
             if (buffer.size() == 0) {
                 return;
             }
-            final String message = buffer.toString(StandardCharsets.UTF_8);
+            final String message = buffer.toString("UTF-8");
             buffer.reset();
             final WebSocket ws = this.webSocket;
             if (ws == null) {

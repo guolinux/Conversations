@@ -32,9 +32,11 @@ public class StreamElementWriter extends BufferedWriter {
             Arrays.asList('\n', '\t', '\r');
 
     private String defaultNamespace = Namespace.JABBER_CLIENT;
+    private final OutputStream rawOutputStream;
 
     public StreamElementWriter(final OutputStream outputStream) {
         super(new OutputStreamWriter(outputStream));
+        this.rawOutputStream = outputStream;
     }
 
     /**
@@ -113,6 +115,16 @@ public class StreamElementWriter extends BufferedWriter {
 
     private static ExtensionFactory.Id id(final Element element) {
         return new ExtensionFactory.Id(element.getName(), element.getNamespace());
+    }
+
+    @Override
+    public void flush() throws IOException {
+        super.flush();
+        if (rawOutputStream
+                instanceof
+                eu.siacs.conversations.xmpp.WebSocketTransport.WebSocketOutputStream wsOut) {
+            wsOut.sendMessage();
+        }
     }
 
     private void writeEncoded(final String text) throws IOException {
