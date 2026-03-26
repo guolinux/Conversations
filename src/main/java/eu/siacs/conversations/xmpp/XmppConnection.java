@@ -1844,6 +1844,7 @@ public class XmppConnection implements Runnable {
     private boolean isSecure() {
         return (features.encryptionEnabled && this.socket instanceof SSLSocket)
                 || (webSocketTransport != null && webSocketTransport.isSecure())
+                || isWebSocket()
                 || Config.ALLOW_NON_TLS_CONNECTIONS
                 || account.isDirectToOnion();
     }
