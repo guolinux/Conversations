@@ -624,7 +624,7 @@ public class XmppConnectionService extends Service {
                         });
             case AudioManager.RINGER_MODE_CHANGED_ACTION:
             case NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED:
-                if (appSettings.isDndOnSilentMode() && appSettings.isAutomaticAvailability()) {
+                if (appSettings.isDndSyncSystem() && appSettings.isAutomaticAvailability()) {
                     refreshAllPresences();
                 }
                 break;
@@ -1135,6 +1135,7 @@ public class XmppConnectionService extends Service {
         }
         systemBroadcastFilter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
         systemBroadcastFilter.addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED);
+        systemBroadcastFilter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
         ContextCompat.registerReceiver(
                 this,
                 this.mInternalEventReceiver,

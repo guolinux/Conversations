@@ -446,10 +446,6 @@
     <string name="pref_presence_settings">Disponibilità</string>
     <string name="pref_away_when_screen_off">\"Non disponibile\" a dispositivo bloccato</string>
     <string name="pref_away_when_screen_off_summary">Imposta come non disponibile quando il dispositivo è bloccato</string>
-    <string name="pref_dnd_on_silent_mode">\"Occupato\" in modalità silenziosa</string>
-    <string name="pref_dnd_on_silent_mode_summary">Imposta come occupato quando il dispositivo è in modalità silenziosa</string>
-    <string name="pref_treat_vibrate_as_silent">Tratta vibrazione come modalità silenziosa</string>
-    <string name="pref_treat_vibrate_as_dnd_summary">Imposta come occupato quando il dispositivo è in modalità vibrazione</string>
     <string name="pref_show_connection_options">Host e porta</string>
     <string name="pref_show_connection_options_summary">Mostra le impostazioni di nome host e della porta quando configuri un profilo</string>
     <string name="hostname_example">xmpp.esempio.it</string>
@@ -528,7 +524,7 @@
     <string name="presence_online">In linea</string>
     <string name="presence_away">Assente</string>
     <string name="presence_xa">Non disponibile</string>
-    <string name="presence_dnd">Occupato</string>
+    <string name="presence_dnd">Non disturbare</string>
     <string name="secure_password_generated">È stata generata una password sicura</string>
     <string name="device_does_not_support_battery_op">Il tuo dispositivo non supporta l\'esclusione per l\'ottimizzazione della batteria</string>
     <string name="registration_please_wait">Registrazione fallita: riprova più tardi</string>
@@ -657,7 +653,7 @@
     <string name="certificate_does_not_contain_jid">Il certificato non contiene un indirizzo XMPP</string>
     <string name="server_info_partial">parziale</string>
     <string name="attach_record_video">Registra un video</string>
-    <string name="copy_to_clipboard">Copia negli appunti</string>
+    <string name="copy_to_clipboard">Copia</string>
     <string name="message_copied_to_clipboard">Messaggio copiato negli appunti</string>
     <string name="message">Messaggio</string>
     <string name="private_messages_are_disabled">I messaggi privati sono disattivati</string>
@@ -1054,7 +1050,7 @@
     <string name="pref_large_font_summary">Aumenta la dimensione dei caratteri nei messaggi</string>
     <string name="pref_accept_invites_from_strangers">Inviti da estranei</string>
     <string name="pref_accept_invites_from_strangers_summary">Accetta inviti a chat di gruppo da estranei</string>
-    <string name="pref_backup_summary">Crea una volta sola, Programma ricorrenze</string>
+    <string name="pref_backup_summary">Crea una volta sola, Programma ricorrenze, Percorso</string>
     <string name="pref_backup_recurring">Backup ricorrente</string>
     <string name="pref_fullscreen_notification">Notifiche a schermo intero</string>
     <string name="unsupported_operation">Operazione non supportata</string>
@@ -1175,5 +1171,19 @@
     <string name="make_owner">Rendi proprietario</string>
     <string name="dismiss_as_owner">Declassa da proprietario</string>
     <string name="account_status_airplane_mode">Modalità aereo</string>
+    <string name="account_status_regis_invalid_captcha">CAPTCHA non valido</string>
+    <string name="its_time_for_contact">Sono le ^1 per ^2</string>
+    <string name="backup_and_restore">Backup e ripristino</string>
+    <string name="pref_import_backup_summary">Seleziona un file di backup per ripristinare i dati</string>
+    <string name="pref_entity_time_summary">Condividi la tua ora con i contatti per vedere in cambio il loro orario locale.</string>
+    <string name="pref_entity_time">Condividi ora locale</string>
+    <string name="pref_category_backup_storage">Archiviazione</string>
+    <string name="contact_has_paused_their_notifications">%s ha messo in pausa le sue notifiche</string>
+    <string name="presence_offline">Non in linea</string>
+    <string name="rtp_state_no_internet">Nessuna connessione a internet</string>
+    <string name="pref_sync_system_dnd">Sincr. \"Non disturbare\" di sistema</string>
+    <string name="pref_sync_system_dnd_summary">Imposta automaticamente il tuo stato su \"Non disturbare\" quando la stessa modalità di Android è attiva.</string>
+    <string name="pref_include_silent_modes">Includi modalità silenziose</string>
+    <string name="pref_include_silent_modes_summary">Indica \"Non disturbare\" anche quando le notifiche sono silenziate o il telefono è su vibrazione.</string>
     <string name="reply_to_message">Rispondi</string>
 </resources>

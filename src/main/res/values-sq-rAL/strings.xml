@@ -353,7 +353,6 @@
     <string name="server_info_broken">I dëmtuar</string>
     <string name="pref_away_when_screen_off">“I larguar”, kur pajisja është e kyçur</string>
     <string name="pref_away_when_screen_off_summary">Shfaqmë si “I lraguar”, kur pajisja është e kyçur</string>
-    <string name="pref_treat_vibrate_as_dnd_summary">Shfaqmë si “I zënë”, kur pajisja është në dridhje</string>
     <string name="pref_show_connection_options">Strehëemër &amp; Portë</string>
     <string name="action_add_account_with_certificate">Hyni me dëshmi</string>
     <string name="unable_to_parse_certificate">S’u analizua dot dëshmi</string>
@@ -402,7 +401,7 @@
     <string name="presence_chat">I lirë për Fjalosje</string>
     <string name="presence_online">Në linjë</string>
     <string name="presence_away">I larguar</string>
-    <string name="presence_dnd">I zënë</string>
+    <string name="presence_dnd">Mos Më Shqetësoni</string>
     <string name="secure_password_generated">U prodhua një fjalëkalim i siguruar</string>
     <string name="registration_please_wait">Regjistrimi dështoi: Riprovoni më vonë</string>
     <string name="registration_password_too_weak">Regjistrimi dështoi: Fjalëkalim shumë i dobët</string>
@@ -488,7 +487,7 @@
     <string name="pref_validate_hostname">Vlerësoj strehemër me DNSSEC</string>
     <string name="server_info_partial">të pjesshme</string>
     <string name="attach_record_video">Regjistroni video</string>
-    <string name="copy_to_clipboard">Kopjoje në të papastër</string>
+    <string name="copy_to_clipboard">Kopjoje</string>
     <string name="message_copied_to_clipboard">Mesazhi u kopjua në të papastër</string>
     <string name="message">Mesazh</string>
     <string name="private_messages_are_disabled">Mesazhet private janë të çaktivizuara</string>
@@ -868,9 +867,6 @@
     <string name="pref_chat_states_summary">Bëjuni të ditur kontakteve tuaj, kur shkruani mesazhe për ta</string>
     <string name="pref_dont_trust_system_cas_title">Mos beso DA sistemi</string>
     <string name="pref_quick_action_summary">Zëvendëso butonin “Dërgoje” me veprim të shpejtë</string>
-    <string name="pref_dnd_on_silent_mode">“I zënë” nën mënyrën e heshtur</string>
-    <string name="pref_dnd_on_silent_mode_summary">Shfaqe si “I zënë”, kur pajisja gjendet nën mënyrën e heshtur</string>
-    <string name="pref_treat_vibrate_as_silent">Trajtoje dridhjen si mënyrë heshturazi</string>
     <string name="pref_show_connection_options_summary">Kur ujdiset një llogari, shfaq rregullime të zgjeruara lidhjeje</string>
     <string name="hostname_example">xmpp.example.com</string>
     <string name="fetching_mam_prefs">Po sillen parapëlqime arkivimi. Ju lutemi, pritni…</string>
@@ -1165,5 +1161,21 @@
     <string name="make_owner">Bëjeni të zotin</string>
     <string name="dismiss_as_owner">Hiqeni nga zot</string>
     <string name="account_status_airplane_mode">Mënyra aeroplan</string>
+    <string name="account_status_regis_invalid_captcha">CAPTCHA e pavlefshme</string>
+    <string name="backup_and_restore">Kopjeruani &amp; Riktheni</string>
+    <string name="pref_import_backup_summary">Që të riktheni të dhënat tuaja, përzgjidhni një kartelë kopjeruajtje</string>
+    <string name="pref_category_backup_storage">Depozitë</string>
+    <string name="pref_entity_time">Tregoni kohën vendore</string>
+    <string name="pref_entity_time_summary">Tregojuni kontakteve tuaj kohën tuaj vendore, që të mund të shihni të tyren.</string>
+    <string name="its_time_for_contact">Është ^1 për ^2</string>
+    <string name="contact_has_paused_their_notifications">%s ka ndalur njoftimet e veta</string>
+    <string name="pref_headsup_notifications">Njoftime “Vini re”</string>
+    <string name="pref_headsup_notifications_summary">Shfaq njoftime “Vini re”</string>
+    <string name="pref_sync_system_dnd">Njëkohëso DND sistemi</string>
+    <string name="pref_sync_system_dnd_summary">Caktoni automatikisht gjendjen tuaj si “Mos Më Shqetësoni”, kur mënyra DND e Android-it është aktive.</string>
+    <string name="pref_include_silent_modes">Përfshi mënyra të heshtura</string>
+    <string name="pref_include_silent_modes_summary">Sinjalizo gjithashtu “Mos më Shqetësoni”, kur njoftimet heshtohen, ose telefoni gjendet nën mënyrën dridhje.</string>
+    <string name="presence_offline">Jashtë linje</string>
+    <string name="rtp_state_no_internet">S’ka lidhje në internet</string>
     <string name="reply_to_message">Përgjigjuni</string>
 </resources>

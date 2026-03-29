@@ -22,6 +22,7 @@ import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xmpp.Jid;
 import eu.siacs.conversations.xmpp.manager.DiscoManager;
+import im.conversations.android.model.DynamicTag;
 import im.conversations.android.xmpp.EntityCapabilities2;
 import im.conversations.android.xmpp.model.Hash;
 import im.conversations.android.xmpp.model.data.Data;
@@ -833,7 +834,7 @@ public class MucOptions {
         private final String occupantId;
         private final Role role;
         private final Affiliation affiliation;
-        private final Set<Hat> hats;
+        private final Set<DynamicTag.Hat> hats;
         private Long pgpKeyId;
         private String avatar;
         private Class<? extends ChatStateNotification> chatState = null;
@@ -845,7 +846,7 @@ public class MucOptions {
                 final String occupantId,
                 final Role role,
                 final Affiliation affiliation,
-                final Set<Hat> hats) {
+                final Set<DynamicTag.Hat> hats) {
             Preconditions.checkNotNull(options, "MucOptions must not be null");
             Preconditions.checkNotNull(role, "Role must not be null. Use NONE instead");
             Preconditions.checkNotNull(
@@ -882,7 +883,7 @@ public class MucOptions {
             return this.affiliation;
         }
 
-        public Set<Hat> getHats() {
+        public Set<DynamicTag.Hat> getHats() {
             return this.hats;
         }
 
@@ -890,10 +891,14 @@ public class MucOptions {
             if (this.role == Role.NONE && this.affiliation == Affiliation.NONE) {
                 return ImmutableList.copyOf(this.hats);
             } else {
-                return new ImmutableList.Builder<DynamicTag>()
-                        .add(new Attributes(this.affiliation, this.role))
-                        .addAll(this.hats)
-                        .build();
+                final var builder =
+                        new ImmutableList.Builder<DynamicTag>()
+                                .add(new DynamicTag.Attributes(this.affiliation, this.role))
+                                .addAll(this.hats);
+                if (this.role == Role.NONE) {
+                    builder.add(new DynamicTag.Status(Presence.Availability.OFFLINE));
+                }
+                return builder.build();
             }
         }
 
@@ -1113,7 +1118,7 @@ public class MucOptions {
                 final String occupantId,
                 final Role role,
                 final Affiliation affiliation,
-                final Set<Hat> hats,
+                final Set<DynamicTag.Hat> hats,
                 final boolean connected) {
             super(options, fullJid, realJid, occupantId, role, affiliation, hats);
             Preconditions.checkNotNull(
@@ -1217,10 +1222,4 @@ public class MucOptions {
             };
         }
     }
-
-    public sealed interface DynamicTag {}
-
-    public record Hat(String uri, String title, Double hue) implements DynamicTag {}
-
-    public record Attributes(Affiliation affiliation, Role role) implements DynamicTag {}
 }

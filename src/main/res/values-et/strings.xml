@@ -621,10 +621,6 @@
     <string name="server_info_broken">Katki</string>
     <string name="pref_away_when_screen_off">Seadme lukustumisel, määra olekuks „Eemal“</string>
     <string name="pref_away_when_screen_off_summary">Kui seade on lukus, siis määra oma olekuks „Eemal“</string>
-    <string name="pref_dnd_on_silent_mode">Vaikse seadme puhul näita olekut „Hõivatud“</string>
-    <string name="pref_dnd_on_silent_mode_summary">Kui nutiseade on vaikses režiimis, siis näita oma olekuks „Hõivatud“</string>
-    <string name="pref_treat_vibrate_as_silent">Tõlgenda värinaalarmi kasutamist vaikse režiimina</string>
-    <string name="pref_treat_vibrate_as_dnd_summary">Kui nutiseade on värinaalarmi režiimis, siis näita oma olekuks „Hõivatud“</string>
     <string name="pref_show_connection_options">Serveri hosti nimi ja pordi number</string>
     <string name="pref_show_connection_options_summary">Kasutajakonto lisamisel näita täiendavaid ühenduse seadistusi</string>
     <string name="hostname_example">xmpp.toredomeen.ee</string>
@@ -1074,7 +1070,7 @@
     <string name="pref_category_application">Rakendus</string>
     <string name="pref_category_interaction">Koostoime</string>
     <string name="pref_category_on_this_device">Seadmes</string>
-    <string name="pref_backup_summary">Üks kord tehtav või korduv varundus</string>
+    <string name="pref_backup_summary">Üks kord tehtav või korduv varundus ning tema asukoht</string>
     <string name="pref_create_backup_one_off_summary">Tee varukoopia vaid nüüd</string>
     <string name="pref_backup_recurring">Tee varukoopiaid korduvalt</string>
     <string name="pref_fullscreen_notification">Täisekraaniteavitused</string>
@@ -1179,5 +1175,18 @@
     <string name="make_owner">Muuda omanikuks</string>
     <string name="dismiss_as_owner">Võta omaniku roll ära</string>
     <string name="account_status_airplane_mode">Lennukirežiim</string>
+    <string name="account_status_regis_invalid_captcha">Robotilõksu vastus pole õige</string>
+    <string name="backup_and_restore">Varundus ja taastamine</string>
+    <string name="pref_import_backup_summary">Oma andmete taastamiseks vali varukoopia</string>
+    <string name="pref_category_backup_storage">Andmeruum</string>
+    <string name="its_time_for_contact">Kasutajal ^2 on kell ^1</string>
+    <string name="pref_entity_time_summary">Jaga oma kellaaega teiste kasutajatega ja näed nende oma.</string>
+    <string name="pref_entity_time">Jaga kohalikku kellaaega</string>
+    <string name="contact_has_paused_their_notifications">%s on oma teavitused ajutiselt peatanud</string>
+    <string name="presence_offline">Pole võrgus</string>
+    <string name="pref_sync_system_dnd">Sünkrooni seadme „Ära sega mind“ olekuga</string>
+    <string name="pref_sync_system_dnd_summary">Kui Androidi „Ära sega mind“ olek on aktiivne, siis sünkrooni see ka rakendusse.</string>
+    <string name="pref_include_silent_modes">Kaasa seadme vaiksed olekud</string>
+    <string name="pref_include_silent_modes_summary">Märgi olekuks „Ära sega mind“ ka siis, kui teavitused on summutatud või nutiseade kasutab teavituseks vaid värinat.</string>
     <string name="reply_to_message">Vasta</string>
 </resources>

@@ -421,6 +421,7 @@
     <string name="contact_is_typing">%s is typing…</string>
     <string name="contact_has_stopped_typing">%s has stopped typing</string>
     <string name="its_time_for_contact">It’s ^1 for ^2</string>
+    <string name="contact_has_paused_their_notifications">%s has paused their notifications</string>
     <string name="contacts_are_typing">%s are typing…</string>
     <string name="contacts_have_stopped_typing">%s have stopped typing</string>
     <string name="pref_chat_states">Typing notifications</string>
@@ -468,10 +469,6 @@
     <string name="pref_presence_settings">Availability</string>
     <string name="pref_away_when_screen_off">Away when device is locked</string>
     <string name="pref_away_when_screen_off_summary">Show as Away when the device is locked</string>
-    <string name="pref_dnd_on_silent_mode">Busy in silent mode</string>
-    <string name="pref_dnd_on_silent_mode_summary">Show as Busy when device is in silent mode</string>
-    <string name="pref_treat_vibrate_as_silent">Treat vibrate as silent mode</string>
-    <string name="pref_treat_vibrate_as_dnd_summary">Show as Busy when device is on vibrate</string>
     <string name="pref_show_connection_options">Hostname &amp; Port</string>
     <string name="pref_show_connection_options_summary">Show extended connection settings when setting up an account</string>
     <string name="hostname_example">xmpp.example.com</string>
@@ -553,7 +550,8 @@
     <string name="presence_online">Online</string>
     <string name="presence_away">Away</string>
     <string name="presence_xa">Not Available</string>
-    <string name="presence_dnd">Busy</string>
+    <string name="presence_dnd">Do Not Disturb</string>
+    <string name="presence_offline">Offline</string>
     <string name="secure_password_generated">A secure password has been generated</string>
     <string name="device_does_not_support_battery_op">Your device does not support opting out of battery optimization</string>
     <string name="registration_please_wait">Registration failed: Try again later</string>
@@ -683,7 +681,7 @@
     <string name="certificate_does_not_contain_jid">Certificate does not contain a XMPP address</string>
     <string name="server_info_partial">partial</string>
     <string name="attach_record_video">Record video</string>
-    <string name="copy_to_clipboard">Copy to clipboard</string>
+    <string name="copy_to_clipboard">Copy</string>
     <string name="message_copied_to_clipboard">Message copied to clipboard</string>
     <string name="message">Message</string>
     <string name="private_messages_are_disabled">Private messages are disabled</string>
@@ -927,6 +925,7 @@
     <string name="rtp_state_declined_or_busy">Busy</string>
     <string name="rtp_state_contact_offline">Contact is not available</string>
     <string name="rtp_state_connectivity_error">Could not connect call</string>
+    <string name="rtp_state_no_internet">No internet connection</string>
     <string name="rtp_state_connectivity_lost_error">Connection lost</string>
     <string name="rtp_state_retracted">Retracted call</string>
     <string name="rtp_state_application_failure">App failure</string>
@@ -1155,6 +1154,10 @@
     <string name="pref_category_backup_storage">Storage</string>
     <string name="pref_entity_time_summary">Share your current time with contacts to see their local time in return.</string>
     <string name="pref_entity_time">Share local time</string>
+    <string name="pref_sync_system_dnd">Sync system DND</string>
+    <string name="pref_sync_system_dnd_summary">Automatically set your status to \"Do Not Disturb\" when Android\'s DND mode is active.</string>
+    <string name="pref_include_silent_modes">Include silent modes</string>
+    <string name="pref_include_silent_modes_summary">Also signal \"Do Not Disturb\" when notifications are muted or the phone is on vibrate.</string>
     <plurals name="delete_n_messages">
         <item quantity="one">Delete %d message</item>
         <item quantity="other">Delete %d messages</item>
