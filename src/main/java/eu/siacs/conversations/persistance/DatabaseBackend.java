@@ -460,6 +460,10 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                         + " TEXT, "
                         + Message.REPLY_TO
                         + " TEXT, "
+                        + Message.REPLY_FALLBACK_FROM
+                        + " TEXT, "
+                        + Message.REPLY_FALLBACK_TO
+                        + " TEXT, "
                         + Message.RELATIVE_FILE_PATH
                         + " TEXT, "
                         + Message.SERVER_MSG_ID
@@ -1104,6 +1108,18 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                             + Message.TABLENAME
                             + " ADD COLUMN "
                             + Message.REPLY_TO
+                            + " TEXT");
+            db.execSQL(
+                    "ALTER TABLE "
+                            + Message.TABLENAME
+                            + " ADD COLUMN "
+                            + Message.REPLY_FALLBACK_FROM
+                            + " TEXT");
+            db.execSQL(
+                    "ALTER TABLE "
+                            + Message.TABLENAME
+                            + " ADD COLUMN "
+                            + Message.REPLY_FALLBACK_TO
                             + " TEXT");
         }
     }

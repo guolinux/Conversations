@@ -58,6 +58,8 @@ import im.conversations.android.xmpp.model.oob.OutOfBandData;
 import im.conversations.android.xmpp.model.pubsub.event.Event;
 import im.conversations.android.xmpp.model.reactions.Reactions;
 import im.conversations.android.xmpp.model.retraction.Retract;
+
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -280,15 +282,15 @@ public class MessageParser extends AbstractParser
         final LocalizedContent body = packet.getBody();
         final Element mucUserElement = packet.findChild("x", Namespace.MUC_USER);
         final Element replyMessageElement = packet.findChild("reply", Namespace.XMPP_REPLY);
-        final String replyMessageUuid;
-        final String replyTo;
-        if (replyMessageElement != null) {
-            replyMessageUuid = replyMessageElement.getAttribute("id");
-            replyTo = replyMessageElement.getAttribute("to");
-        } else {
-            replyMessageUuid = null;
-            replyTo = null;
-        }
+        final Element fallbackMessageElement = packet.findChild("fallback", Namespace.FALLBACK_INDICATION);
+        final String replyMessageUuid = replyMessageElement != null ?
+                replyMessageElement.getAttribute("id") : null;
+        final String replyTo = replyMessageElement != null ?
+                replyMessageElement.getAttribute("to") : null;
+        final Map<String, String> fallbackFromToMap = fallbackMessageElement != null ?
+                    fallbackMessageElement.findChild("body", Namespace.FALLBACK_INDICATION).getAttributes() : null;
+        final String replyFallbackFrom = fallbackFromToMap != null ? fallbackFromToMap.get("start") : null;
+        final String replyFallbackTo = fallbackFromToMap != null ? fallbackFromToMap.get("end") : null;
         final boolean isTypeGroupChat =
                 packet.getType()
                         == im.conversations.android.xmpp.model.stanza.Message.Type.GROUPCHAT;
@@ -534,6 +536,8 @@ public class MessageParser extends AbstractParser
             message.setTime(timestamp);
             message.setReplyMessageUuid(replyMessageUuid);
             message.setReplyTo(replyTo);
+            message.setReplyFallbackFrom(replyFallbackFrom);
+            message.setReplyFallbackTo(replyFallbackTo);
             if (body != null && body.content != null && body.content.equals(oobUrl)) {
                 message.setOob(true);
                 if (CryptoHelper.isPgpEncryptedUrl(oobUrl)) {

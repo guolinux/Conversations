@@ -17,6 +17,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -493,7 +494,13 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         setTextColor(viewHolder.messageBody(), bubbleColor);
         setTextSize(viewHolder.messageBody(), this.bubbleDesign.largeFont);
         viewHolder.messageBody().setTypeface(null, Typeface.NORMAL);
-        final var rawBody = message.getBody();
+        final var rawBodyWithFallback = message.getBody();
+        final var rawBody = (message.getReplyFallbackFrom() != null && message.getReplyFallbackTo() != null) ?
+                (
+                        rawBodyWithFallback.substring(0, Integer.parseInt(message.getReplyFallbackFrom())) +
+                        rawBodyWithFallback.substring(Integer.parseInt(message.getReplyFallbackTo()))
+                ) :
+                rawBodyWithFallback;
         if (Strings.isNullOrEmpty(rawBody)) {
             viewHolder.messageBody().setText("");
             viewHolder.messageBody().setTextIsSelectable(false);
@@ -1342,6 +1349,8 @@ public class MessageAdapter extends ArrayAdapter<Message> {
     @Override
     public void notifyDataSetChanged() {
         super.notifyDataSetChanged();
+        uuidRemoteIndexDirty = true;
+        uuidRemoteIndex.clear();
         uuidIndexDirty = true;
         uuidIndex.clear();
     }

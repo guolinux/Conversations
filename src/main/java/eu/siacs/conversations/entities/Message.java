@@ -72,6 +72,8 @@ public class Message extends AbstractEntity
     public static final String TYPE = "type";
     public static final String REPLY_MESSAGE_UUID = "replyMessageUuid";
     public static final String REPLY_TO = "replyTo";
+    public static final String REPLY_FALLBACK_FROM = "replyFallbackFrom";
+    public static final String REPLY_FALLBACK_TO = "replyFallbackTo";
     public static final String CARBON = "carbon";
     public static final String OOB = "oob";
     public static final String EDITED = "edited";
@@ -102,6 +104,8 @@ public class Message extends AbstractEntity
     protected int type;
     protected String replyMessageUuid = null;
     protected String replyTo = null;
+    protected String replyFallbackFrom = null;
+    protected String replyFallbackTo = null;
     protected boolean deleted = false;
     protected boolean carbon = false;
     protected boolean oob = false;
@@ -153,6 +157,8 @@ public class Message extends AbstractEntity
                 TYPE_TEXT,
                 null,
                 null,
+                null,
+                null,
                 false,
                 null,
                 null,
@@ -182,6 +188,8 @@ public class Message extends AbstractEntity
                 Message.ENCRYPTION_NONE,
                 status,
                 type,
+                null,
+                null,
                 null,
                 null,
                 false,
@@ -214,6 +222,8 @@ public class Message extends AbstractEntity
             final int type,
             final String replyMessageUuid,
             final String replyTo,
+            final String replyFallbackFrom,
+            final String replyFallbackTo,
             final boolean carbon,
             final String remoteMsgId,
             final String relativeFilePath,
@@ -241,6 +251,8 @@ public class Message extends AbstractEntity
         this.type = type;
         this.replyMessageUuid = replyMessageUuid;
         this.replyTo = replyTo;
+        this.replyFallbackFrom = replyFallbackFrom;
+        this.replyFallbackTo = replyFallbackTo;
         this.carbon = carbon;
         this.remoteMsgId = remoteMsgId;
         this.relativeFilePath = relativeFilePath;
@@ -272,6 +284,8 @@ public class Message extends AbstractEntity
                 cursor.getInt(cursor.getColumnIndexOrThrow(TYPE)),
                 cursor.getString(cursor.getColumnIndexOrThrow(REPLY_MESSAGE_UUID)),
                 cursor.getString(cursor.getColumnIndexOrThrow(REPLY_TO)),
+                cursor.getString(cursor.getColumnIndexOrThrow(REPLY_FALLBACK_FROM)),
+                cursor.getString(cursor.getColumnIndexOrThrow(REPLY_FALLBACK_TO)),
                 cursor.getInt(cursor.getColumnIndexOrThrow(CARBON)) > 0,
                 cursor.getString(cursor.getColumnIndexOrThrow(REMOTE_MSG_ID)),
                 cursor.getString(cursor.getColumnIndexOrThrow(RELATIVE_FILE_PATH)),
@@ -532,6 +546,22 @@ public class Message extends AbstractEntity
 
     public void setReplyTo(String replyTo) {
         this.replyTo = replyTo;
+    }
+
+    public String getReplyFallbackFrom() {
+        return this.replyFallbackFrom;
+    }
+
+    public void setReplyFallbackFrom(String replyFallbackFrom) {
+        this.replyFallbackFrom = replyFallbackFrom;
+    }
+
+    public String getReplyFallbackTo() {
+        return this.replyFallbackTo;
+    }
+
+    public void setReplyFallbackTo(String replyTo) {
+        this.replyFallbackTo = replyTo;
     }
 
     public boolean isCarbon() {
