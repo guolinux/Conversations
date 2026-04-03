@@ -203,6 +203,7 @@ public class ConversationFragment extends XmppFragment
     private static final String STATE_LAST_MESSAGE_UUID = "state_last_message_uuid";
     private static final String STATE_REPLY_MESSAGE_UUID = "state_reply_message_uuid";
     private static final String STATE_REPLY_TO = "state_reply_to";
+    private static final int MAX_REPLY_LOAD_ATTEMPTS = 30;
 
     private final List<Message> messageList = new ArrayList<>();
     private final PendingItem<ActivityResult> postponedActivityResult = new PendingItem<>();
@@ -216,7 +217,6 @@ public class ConversationFragment extends XmppFragment
     private final PendingItem<String> pendingReplyMessageUuid = new PendingItem<>();
     private final PendingItem<String> pendingReplyTo = new PendingItem<>();
     private final MediaPreviewAdapter mediaPreviewAdapter = new MediaPreviewAdapter(this);
-    private static final int REPLY_SCROLL_NEAR_DISTANCE = 6;
     private static final int REPLY_TARGET_TOP_OFFSET_DP = 32;
     private static final int REPLY_SCROLL_SHORT_MS = 120;
     public Uri mPendingEditorContent = null;
@@ -232,6 +232,8 @@ public class ConversationFragment extends XmppFragment
     private View replyPreviewContainer;
     private TextView replyPreviewTitle;
     private TextView replyPreviewBody;
+    private View replyPreviewLoading;
+    private String pendingReplyJumpUuid = null;
     private final OnClickListener clickToMuc =
             new OnClickListener() {
 
@@ -346,6 +348,7 @@ public class ConversationFragment extends XmppFragment
             messageLoaderToast.cancel();
         }
         conversation.messagesLoaded.set(true);
+        consumePendingReplyJumpIfPossible();
     }
 
     private void informUserImpl(final int resId) {
@@ -1282,6 +1285,7 @@ public class ConversationFragment extends XmppFragment
         replyPreviewBody = binding.getRoot().findViewById(R.id.reply_preview_body);
         View replyPreviewClose = binding.getRoot().findViewById(R.id.reply_preview_close);
         binding.replyPreviewContainer.setOnClickListener(v -> jumpToReplyTarget());
+        replyPreviewLoading = binding.getRoot().findViewById(R.id.reply_preview_loading);
         if (replyPreviewClose != null) {
             replyPreviewClose.setOnClickListener(v -> clearReplyTarget());
         }
@@ -1310,9 +1314,15 @@ public class ConversationFragment extends XmppFragment
             if (positionInAdapter >= 0) {
                 navigateToMessagePosition(positionInAdapter);
             } else if (!Strings.isNullOrEmpty(replyToUuid)) {
-                attemptLoadUntilFoundForReply(replyToUuid, 30);
+                pendingReplyJumpUuid = replyToUuid;
+                setReplyTargetLoading(true);
+                attemptLoadUntilFoundForReply(replyToUuid, MAX_REPLY_LOAD_ATTEMPTS);
             } else {
-                Toast.makeText(getActivity(), "Referenced message not loaded", Toast.LENGTH_SHORT).show(); // TODO: add translation on Weblate
+                Toast.makeText(
+                        getActivity(),
+                        R.string.referenced_message_not_found,
+                        Toast.LENGTH_SHORT
+                ).show();
             }
         });
         binding.messagesView.setAdapter(messageListAdapter);
@@ -1375,7 +1385,7 @@ public class ConversationFragment extends XmppFragment
     private void showReplyTarget(@NonNull final String uuid, @NonNull final String to) {
         this.replyingMessageUuid = uuid;
         this.replyingTo = to;
-        this.replyingToMessage = findLoadedMessageByUuidForReply(uuid); // may be null
+        this.replyingToMessage = findMessageByUuidForReply(uuid);
         updateReplyPreviewUi();
     }
 
@@ -1400,8 +1410,9 @@ public class ConversationFragment extends XmppFragment
         }
 
         if (replyingToMessage == null) {
-            replyingToMessage = findLoadedMessageByUuidForReply(replyingMessageUuid);
+            replyingToMessage = findMessageByUuidForReply(replyingMessageUuid);
             if (replyingToMessage == null) {
+                replyPreviewContainer.setVisibility(View.GONE);
                 return;
             }
         }
@@ -1455,28 +1466,92 @@ public class ConversationFragment extends XmppFragment
             }
 
         } else {
-            listView.setSelectionFromTop(pos, topOffset);
-            listView.post(this::fireReadEvent);
+            listView.post(() -> {
+                listView.setSelectionFromTop(pos, topOffset);
+                listView.post(this::fireReadEvent);
+            });
         }
     }
 
+    private void consumePendingReplyJumpIfPossible() {
+        final String targetUuid = pendingReplyJumpUuid;
+        if (Strings.isNullOrEmpty(targetUuid) || binding == null) {
+            return;
+        }
+
+        binding.messagesView.post(() -> {
+            if (binding == null) {
+                return;
+            }
+
+            final int pos = getIndexOf(targetUuid, messageList, true);
+            if (pos < 0) {
+                return;
+            }
+
+            pendingReplyJumpUuid = null;
+            navigateToMessagePosition(pos);
+            setReplyTargetLoading(false);
+        });
+    }
+
+    private void setReplyTargetLoading(final boolean loading) {
+        if (binding == null) {
+            return;
+        }
+
+        if (replyPreviewLoading != null) {
+            replyPreviewLoading.setVisibility(loading ? View.VISIBLE : View.GONE);
+        }
+
+        binding.replyPreviewContainer.setEnabled(!loading);
+    }
+
+    private void navigateToReplyTargetWhenReady(@NonNull final String uuid) {
+        if (binding == null) {
+            pendingReplyJumpUuid = null;
+            setReplyTargetLoading(false);
+            return;
+        }
+
+        binding.messagesView.post(() ->
+                binding.messagesView.post(() -> {
+                    final int freshPos = getIndexOf(uuid, messageList, true);
+                    if (freshPos >= 0) {
+                        navigateToMessagePosition(freshPos);
+                    }
+                    pendingReplyJumpUuid = null;
+                    setReplyTargetLoading(false);
+                })
+        );
+    }
 
     private void attemptLoadUntilFoundForReply(@NonNull final String uuid, final int remainingAttempts) {
-        if (conversation == null || remainingAttempts <= 0) {
+        if (conversation == null) {
+            pendingReplyJumpUuid = null;
+            setReplyTargetLoading(false);
+            return;
+        }
+
+        if (remainingAttempts <= 0) {
+            pendingReplyJumpUuid = null;
+            setReplyTargetLoading(false);
             Toast.makeText(
                     requireContext(),
-                    getText(R.string.download_failed_file_not_found),
+                    R.string.referenced_message_not_found,
                     Toast.LENGTH_SHORT
-            ).show(); // TODO: should we have a more specific text?
+            ).show();
             return;
         }
 
         if (messageList.isEmpty()) {
+            pendingReplyJumpUuid = null;
+            setReplyTargetLoading(false);
             Toast.makeText(
                     requireContext(),
-                    getText(R.string.download_failed_file_not_found),
+                    R.string.referenced_message_not_found,
                     Toast.LENGTH_SHORT
-            ).show(); // TODO: should we have a more specific text?
+            ).show();
             return;
         }
 
@@ -1487,7 +1562,6 @@ public class ConversationFragment extends XmppFragment
             timestamp = messageList.get(0).getTimeSent();
         }
 
-        // Trigger loading more
         requireXmppActivity()
                 .xmppConnectionService
                 .loadMoreMessages(
@@ -1500,6 +1574,7 @@ public class ConversationFragment extends XmppFragment
                                     conv.messagesLoaded.set(true);
                                     return;
                                 }
+
                                 runOnUiThreadQuiet(() -> {
                                     synchronized (messageList) {
                                         onMoreMessagesLoadedImpl(conv);
@@ -1507,7 +1582,16 @@ public class ConversationFragment extends XmppFragment
 
                                     final int pos = getIndexOf(uuid, messageList, true);
                                     if (pos >= 0) {
-                                        navigateToMessagePosition(pos);
+                                        pendingReplyJumpUuid = uuid;
+                                        navigateToReplyTargetWhenReady(uuid);
+                                    } else if (!conv.hasMessagesLeftOnServer()) {
+                                        pendingReplyJumpUuid = null;
+                                        setReplyTargetLoading(false);
+                                        Toast.makeText(
+                                                requireContext(),
+                                                R.string.referenced_message_not_found,
+                                                Toast.LENGTH_SHORT
+                                        ).show();
                                     } else {
                                         attemptLoadUntilFoundForReply(uuid, remainingAttempts - 1);
                                     }
@@ -1524,6 +1608,22 @@ public class ConversationFragment extends XmppFragment
     private int dpToPx(final int dp) {
         final float density = requireContext().getResources().getDisplayMetrics().density;
         return (int) (dp * density + 0.5f);
+    }
+
+    private Message findMessageByUuidForReply(@NonNull final String uuid) {
+        final Message loaded = findLoadedMessageByUuidForReply(uuid);
+        if (loaded != null) {
+            return loaded;
+        }
+
+        if (conversation == null || requireXmppActivity().xmppConnectionService == null) {
+            return null;
+        }
+
+        return requireXmppActivity()
+                .xmppConnectionService
+                .databaseBackend
+                .getMessageWithUuidOrRemoteId(conversation, uuid);
     }
 
     private Message findLoadedMessageByUuidForReply(@NonNull final String uuid) {

@@ -1389,7 +1389,25 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         return p == null ? (g == null ? -1 : g) : p;
     }
 
-    private @Nullable Message findMessageByUuidForReply(@NonNull final String uuid) {
+    private @Nullable Message findMessageByUuidForReply(
+            @NonNull final Message currentMessage,
+            @NonNull final String uuid
+    ) {
+        final Message loaded = findLoadedMessageByUuidForReply(uuid);
+        if (loaded != null) {
+            return loaded;
+        }
+
+        if (currentMessage.getConversation() instanceof Conversation conversation) {
+            return activity.xmppConnectionService
+                    .databaseBackend
+                    .getMessageWithUuidOrRemoteId(conversation, uuid);
+        }
+
+        return null;
+    }
+
+    private @Nullable Message findLoadedMessageByUuidForReply(@NonNull final String uuid) {
         final int pos = findPositionByUuidForReply(uuid);
         return pos >= 0 ? getItem(pos) : null;
     }
@@ -1437,7 +1455,7 @@ public class MessageAdapter extends ArrayAdapter<Message> {
             return;
         }
 
-        final Message referenced = findMessageByUuidForReply(replyToUuid);
+        final Message referenced = findMessageByUuidForReply(message, replyToUuid);
         if (referenced == null) {
             android.util.Log.e("MessageAdapter", "Unable to find referenced message for reply, with Uuid " + replyToUuid);
             viewHolder.replyBox().setVisibility(View.GONE);

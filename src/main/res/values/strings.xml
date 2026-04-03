@@ -1164,4 +1164,5 @@
     </plurals>
     <string name="reply_to_message">Reply</string>
     <string name="reply_preview">Preview...</string>
+    <string name="referenced_message_not_found">Referenced message not found</string>
 </resources>

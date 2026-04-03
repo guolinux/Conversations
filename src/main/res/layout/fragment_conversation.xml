@@ -147,6 +147,13 @@
 
 		</com.google.android.material.card.MaterialCardView>
 
+		<ProgressBar
+		    android:id="@+id/reply_preview_loading"
+		    style="?android:attr/progressBarStyleSmall"
+		    android:layout_width="18dp"
+		    android:layout_height="18dp"
+		    android:visibility="gone" />
+
                 <eu.siacs.conversations.ui.widget.EditMessage
                     android:id="@+id/textinput"
                     android:layout_width="match_parent"
