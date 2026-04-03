@@ -216,6 +216,9 @@ public class ConversationFragment extends XmppFragment
     private final PendingItem<String> pendingReplyMessageUuid = new PendingItem<>();
     private final PendingItem<String> pendingReplyTo = new PendingItem<>();
     private final MediaPreviewAdapter mediaPreviewAdapter = new MediaPreviewAdapter(this);
+    private static final int REPLY_SCROLL_NEAR_DISTANCE = 6;
+    private static final int REPLY_TARGET_TOP_OFFSET_DP = 32;
+    private static final int REPLY_SCROLL_SHORT_MS = 120;
     public Uri mPendingEditorContent = null;
     protected MessageAdapter messageListAdapter;
     private String lastMessageUuid = null;
@@ -1305,8 +1308,9 @@ public class ConversationFragment extends XmppFragment
         messageListAdapter.setOnContactPictureLongClicked(this);
         messageListAdapter.setOnReplyBoxClickedListener((replyToUuid, positionInAdapter) -> {
             if (positionInAdapter >= 0) {
-                binding.messagesView.smoothScrollToPosition(positionInAdapter);
-                // TODO: maybe setSelection() is better, if we want instant jumping
+                navigateToMessagePosition(positionInAdapter);
+            } else if (!Strings.isNullOrEmpty(replyToUuid)) {
+                attemptLoadUntilFoundForReply(replyToUuid, 30);
             } else {
                 Toast.makeText(getActivity(), "Referenced message not loaded", Toast.LENGTH_SHORT).show(); // TODO: add translation on Weblate
             }
@@ -1414,7 +1418,7 @@ public class ConversationFragment extends XmppFragment
 
         final int pos = getIndexOf(replyingMessageUuid, messageList, true);
         if (pos >= 0) {
-            scrollToMessagePosition(pos);
+            navigateToMessagePosition(pos);
             // TODO: do we want some blinking animation?
             return;
         }
@@ -1422,11 +1426,40 @@ public class ConversationFragment extends XmppFragment
         attemptLoadUntilFoundForReply(replyingMessageUuid, 30); // TODO: how do we handle this bound?
     }
 
-    private void scrollToMessagePosition(final int pos) {
+    private void navigateToMessagePosition(final int pos) {
+        if (binding == null) {
+            return;
+        }
+
         stopScrolling();
-        binding.messagesView.setSelectionFromTop(Math.max(0, pos - 1), dpToPx(24));
-        binding.messagesView.post(this::fireReadEvent);
+
+        final ListView listView = binding.messagesView;
+        final int first = listView.getFirstVisiblePosition();
+        final int last = listView.getLastVisiblePosition();
+        final int topOffset = dpToPx(REPLY_TARGET_TOP_OFFSET_DP);
+
+        if (pos >= first && pos <= last) {
+            final View child = listView.getChildAt(pos - first);
+            if (child != null) {
+                final int delta = child.getTop() - topOffset;
+
+                if (Math.abs(delta) > dpToPx(12)) {
+                    listView.smoothScrollBy(delta, REPLY_SCROLL_SHORT_MS);
+                    listView.postDelayed(this::fireReadEvent, REPLY_SCROLL_SHORT_MS + 32L);
+                } else {
+                    listView.post(this::fireReadEvent);
+                }
+            } else {
+                listView.smoothScrollToPositionFromTop(pos, topOffset, REPLY_SCROLL_SHORT_MS);
+                listView.postDelayed(this::fireReadEvent, REPLY_SCROLL_SHORT_MS + 32L);
+            }
+
+        } else {
+            listView.setSelectionFromTop(pos, topOffset);
+            listView.post(this::fireReadEvent);
+        }
     }
+
 
     private void attemptLoadUntilFoundForReply(@NonNull final String uuid, final int remainingAttempts) {
         if (conversation == null || remainingAttempts <= 0) {
@@ -1474,8 +1507,7 @@ public class ConversationFragment extends XmppFragment
 
                                     final int pos = getIndexOf(uuid, messageList, true);
                                     if (pos >= 0) {
-                                        scrollToMessagePosition(pos);
-                                        // TODO: same as above: do we want some animation?
+                                        navigateToMessagePosition(pos);
                                     } else {
                                         attemptLoadUntilFoundForReply(uuid, remainingAttempts - 1);
                                     }
@@ -1513,7 +1545,7 @@ public class ConversationFragment extends XmppFragment
             return UIHelper.getFileDescriptionString(requireContext(), m);
         }
         final String body = CharSequences.nullToEmpty(m.getBody());
-        return ellipsizeOneLine(body.replace('\n', ' ').trim(), 120); // TODO: should we parametrize this maxLen?
+        return ellipsizeOneLine(body.split("\n")[0].trim(), 120); // TODO: should we parametrize this maxLen?
     }
 
     private static String ellipsizeOneLine(@NonNull final String s, final int maxLen) {
@@ -3142,6 +3174,7 @@ public class ConversationFragment extends XmppFragment
                     break;
                 case INVALID_NICK:
                     showSnackbar(R.string.invalid_muc_nick, R.string.edit, clickToMuc);
+                    break;
                 case SHUTDOWN:
                     showSnackbar(R.string.conference_shutdown, R.string.try_again, joinMuc);
                     break;
