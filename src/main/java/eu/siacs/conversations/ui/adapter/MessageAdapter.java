@@ -143,6 +143,16 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         }
     }
 
+    public interface OnMessageClickedListener {
+        void onMessageClicked(Message message);
+    }
+
+    private OnMessageClickedListener mOnMessageClickedListener;
+
+    public void setOnMessageClicked(OnMessageClickedListener listener) {
+        this.mOnMessageClickedListener = listener;
+    }
+
     public void flagScreenOn() {
         activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
@@ -1051,6 +1061,17 @@ public class MessageAdapter extends ArrayAdapter<Message> {
                     message.getAggregatedReactions(),
                     reactions -> sendReactions(message, reactions),
                     emoji -> showDetailedReaction(message, emoji));
+        }
+
+        if (mOnMessageClickedListener != null) {
+            final View.OnClickListener onClickListener =
+                    v -> mOnMessageClickedListener.onMessageClicked(message);
+            if (!viewHolder.messageBox().hasOnClickListeners()) {
+                viewHolder.messageBox().setOnClickListener(onClickListener);
+            }
+            if (!viewHolder.messageBody().hasOnClickListeners()) {
+                viewHolder.messageBody().setOnClickListener(onClickListener);
+            }
         }
 
         displayStatus(viewHolder, message, bubbleColor);

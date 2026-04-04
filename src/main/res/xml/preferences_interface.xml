@@ -51,6 +51,15 @@
             android:key="scroll_to_bottom"
             android:summary="@string/pref_scroll_to_bottom_summary"
             android:title="@string/pref_scroll_to_bottom" />
+        <ListPreference
+            android:defaultValue="@string/message_click_action"
+            android:dialogTitle="@string/choose_message_click_action"
+            android:entries="@array/message_click_actions"
+            android:entryValues="@array/message_click_action_values"
+            android:icon="@drawable/ic_touch_app_24dp"
+            android:key="message_click_action"
+            android:title="@string/pref_message_click_action"
+            app:useSimpleSummaryProvider="true" />
         <SwitchPreferenceCompat
             android:defaultValue="@bool/start_searching"
             android:icon="@drawable/ic_search_24dp"

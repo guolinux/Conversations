@@ -279,7 +279,9 @@ public class ConversationFragment extends XmppFragment
                             }
                         }
                     });
-    private InputSettings inputSettings = new InputSettings(true, false, false, true);
+    private InputSettings inputSettings =
+            new InputSettings(
+                    true, false, false, true, AppSettings.MessageClickAction.DO_NOTHING);
     private boolean mShowLastUserInteraction = false;
     public Uri mPendingEditorContent = null;
     protected MessageAdapter messageListAdapter;
@@ -1426,6 +1428,13 @@ public class ConversationFragment extends XmppFragment
         messageListAdapter.setOnContactPictureLongClicked(this);
         binding.messagesView.setAdapter(messageListAdapter);
 
+        binding.messagesView.setOnItemClickListener((parent, view, position, id) -> {
+            final Object item = parent.getItemAtPosition(position);
+            if (item instanceof Message message) {
+                onMessageClicked(message);
+            }
+        });
+
         registerForContextMenu(binding.messagesView);
 
         this.binding.textInput.setCustomInsertionActionModeCallback(
@@ -1455,6 +1464,7 @@ public class ConversationFragment extends XmppFragment
         getParentFragmentManager().removeOnBackStackChangedListener(backStackListener);
         messageListAdapter.setOnContactPictureClicked(null);
         messageListAdapter.setOnContactPictureLongClicked(null);
+        messageListAdapter.setOnMessageClicked(null);
     }
 
     private void quoteText(String text) {
@@ -1473,6 +1483,141 @@ public class ConversationFragment extends XmppFragment
 
     private void quoteMessage(Message message) {
         quoteText(MessageUtils.prepareQuote(message));
+    }
+
+    private void onMessageClicked(Message m) {
+        if (!canHandleMessageClick(m)) {
+            return;
+        }
+        switch (this.inputSettings.messageClickAction()) {
+            case ADD_REACTION -> addReaction(m);
+            case SHARE -> ShareUtil.share(requireXmppActivity(), m);
+            case COPY -> ShareUtil.copyToClipboard(requireXmppActivity(), m);
+            case QUOTE -> quoteMessage(m);
+            case MODIFY -> correctMessage(m);
+            case DO_NOTHING -> {}
+        }
+    }
+
+    private boolean canHandleMessageClick(final Message m) {
+        return switch (this.inputSettings.messageClickAction()) {
+            case DO_NOTHING -> false;
+            case ADD_REACTION -> canAddReaction(m);
+            case SHARE -> canShareMessage(m);
+            case COPY -> canCopyMessage(m);
+            case QUOTE -> canQuoteMessage(m);
+            case MODIFY -> canModifyMessage(m);
+        };
+    }
+
+    private boolean hasMessageContextActions(final Message m) {
+        if (m.getType() == Message.TYPE_STATUS || m.getType() == Message.TYPE_RTP_SESSION) {
+            return false;
+        }
+        if (m.getEncryption() == Message.ENCRYPTION_AXOLOTL_NOT_FOR_THIS_DEVICE
+                || m.getEncryption() == Message.ENCRYPTION_AXOLOTL_FAILED) {
+            return false;
+        }
+        final Transferable t = m.getTransferable();
+        if (m.getStatus() == Message.STATUS_RECEIVED
+                && t != null
+                && (t.getStatus() == Transferable.STATUS_CANCELLED
+                        || t.getStatus() == Transferable.STATUS_FAILED)) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean canAddReaction(final Message m) {
+        if (!hasMessageContextActions(m)) {
+            return false;
+        }
+        final Conversational conversational = m.getConversation();
+        if (conversational instanceof Conversation c) {
+            final var singleOrOccupantId =
+                    c.getMode() == Conversational.MODE_SINGLE
+                            || (c.getMucOptions().occupantId()
+                                    && c.getMucOptions().participating());
+            final var reactionBaseConditions =
+                    m.getStatus() != Message.STATUS_SEND_FAILED
+                            && !m.isDeleted()
+                            && singleOrOccupantId;
+            if (c.getMode() == Conversational.MODE_MULTI) {
+                final var restrictions = c.getMucOptions().getReactionsRestrictions();
+                return reactionBaseConditions
+                        && restrictions.reactionsPerUserRemaining(m.getReactions());
+            } else {
+                return reactionBaseConditions;
+            }
+        }
+        return false;
+    }
+
+    private boolean canCopyMessage(final Message m) {
+        if (!hasMessageContextActions(m)) {
+            return false;
+        }
+        final Transferable t = m.getTransferable();
+        return !m.isFileOrImage()
+                && !isEncryptedForContextMenu(m)
+                && !m.isGeoUri()
+                && !m.treatAsDownloadable()
+                && !MessageUtils.unInitiatedButKnownSize(m)
+                && t == null;
+    }
+
+    private boolean canQuoteMessage(final Message m) {
+        return canCopyMessage(m)
+                && !showErrorMessageMenuItem(m)
+                && !MessageUtils.prepareQuote(m).isEmpty();
+    }
+
+    private boolean canShareMessage(final Message m) {
+        if (!hasMessageContextActions(m)) {
+            return false;
+        }
+        final Transferable t = m.getTransferable();
+        final boolean deleted = m.isDeleted();
+        final boolean receiving =
+                m.getStatus() == Message.STATUS_RECEIVED
+                        && (t instanceof JingleFileTransferConnection
+                                || t instanceof HttpDownloadConnection);
+        final boolean unInitiatedButKnownSize = MessageUtils.unInitiatedButKnownSize(m);
+        return (m.isFileOrImage() && !deleted && !receiving)
+                || (m.getType() == Message.TYPE_TEXT
+                        && !m.treatAsDownloadable()
+                        && !unInitiatedButKnownSize
+                        && t == null);
+    }
+
+    private boolean canModifyMessage(final Message m) {
+        if (!hasMessageContextActions(m)) {
+            return false;
+        }
+        final Conversational conversational = m.getConversation();
+        if (conversational instanceof Conversation c) {
+            final var singleOrOccupantId =
+                    c.getMode() == Conversational.MODE_SINGLE
+                            || (c.getMucOptions().occupantId()
+                                    && c.getMucOptions().participating());
+            return !showErrorMessageMenuItem(m)
+                    && m.getType() == Message.TYPE_TEXT
+                    && !m.isGeoUri()
+                    && m.isLastCorrectableMessage()
+                    && singleOrOccupantId;
+        }
+        return false;
+    }
+
+    private static boolean isEncryptedForContextMenu(final Message m) {
+        return m.getEncryption() == Message.ENCRYPTION_DECRYPTION_FAILED
+                || m.getEncryption() == Message.ENCRYPTION_PGP;
+    }
+
+    private static boolean showErrorMessageMenuItem(final Message m) {
+        return m.getStatus() == Message.STATUS_SEND_FAILED
+                && m.getErrorMessage() != null
+                && !Message.ERROR_MESSAGE_CANCELLED.equals(m.getErrorMessage());
     }
 
     @Override
@@ -1494,28 +1639,8 @@ public class ConversationFragment extends XmppFragment
     private void populateContextMenu(final ContextMenu menu) {
         final Message m = this.selectedMessage;
         final Transferable t = m.getTransferable();
-        if (m.getType() != Message.TYPE_STATUS && m.getType() != Message.TYPE_RTP_SESSION) {
-
-            if (m.getEncryption() == Message.ENCRYPTION_AXOLOTL_NOT_FOR_THIS_DEVICE
-                    || m.getEncryption() == Message.ENCRYPTION_AXOLOTL_FAILED) {
-                return;
-            }
-
-            if (m.getStatus() == Message.STATUS_RECEIVED
-                    && t != null
-                    && (t.getStatus() == Transferable.STATUS_CANCELLED
-                            || t.getStatus() == Transferable.STATUS_FAILED)) {
-                return;
-            }
-
+        if (hasMessageContextActions(m)) {
             final boolean deleted = m.isDeleted();
-            final boolean encrypted =
-                    m.getEncryption() == Message.ENCRYPTION_DECRYPTION_FAILED
-                            || m.getEncryption() == Message.ENCRYPTION_PGP;
-            final boolean receiving =
-                    m.getStatus() == Message.STATUS_RECEIVED
-                            && (t instanceof JingleFileTransferConnection
-                                    || t instanceof HttpDownloadConnection);
             requireActivity().getMenuInflater().inflate(R.menu.message_context, menu);
             menu.setHeaderTitle(R.string.message_options);
             final MenuItem addReaction = menu.findItem(R.id.action_add_reaction);
@@ -1537,10 +1662,6 @@ public class ConversationFragment extends XmppFragment
             final MenuItem showErrorMessage = menu.findItem(R.id.show_error_message);
             final MenuItem saveFile = menu.findItem(R.id.save_file);
             final boolean unInitiatedButKnownSize = MessageUtils.unInitiatedButKnownSize(m);
-            final boolean showError =
-                    m.getStatus() == Message.STATUS_SEND_FAILED
-                            && m.getErrorMessage() != null
-                            && !Message.ERROR_MESSAGE_CANCELLED.equals(m.getErrorMessage());
             final Conversational conversational = m.getConversation();
             final var connection = conversational.getAccount().getXmppConnection();
             if (m.getStatus() == Message.STATUS_RECEIVED
@@ -1554,53 +1675,31 @@ public class ConversationFragment extends XmppFragment
                 }
             }
             if (conversational instanceof Conversation c) {
-                final var singleOrOccupantId =
-                        c.getMode() == Conversational.MODE_SINGLE
-                                || (c.getMucOptions().occupantId()
-                                        && c.getMucOptions().participating());
-                final var reactionBaseConditions =
-                        m.getStatus() != Message.STATUS_SEND_FAILED
-                                && !m.isDeleted()
-                                && singleOrOccupantId;
                 if (m.getStatus() != Message.STATUS_SEND_FAILED
                         && c.getMode() == Conversational.MODE_MULTI) {
                     final var mucOptions = c.getMucOptions();
-                    final var restrictions = mucOptions.getReactionsRestrictions();
-                    final var reactionsRemaining =
-                            restrictions.reactionsPerUserRemaining(m.getReactions());
                     moderateMessage.setVisible(
                             !mucOptions.isPrivateAndNonAnonymous()
                                     && mucOptions.moderation()
                                     && mucOptions.getSelf().ranks(Role.MODERATOR)
                                     && m.getServerMsgId() != null);
-                    addReaction.setVisible(reactionBaseConditions && reactionsRemaining);
                 } else {
-                    addReaction.setVisible(reactionBaseConditions);
                     moderateMessage.setVisible(false);
                 }
+                addReaction.setVisible(canAddReaction(m));
                 moderateMessage.setTitle(
                         isAckedModerationDisclaimer()
                                 ? R.string.moderate_delete
                                 : R.string.moderate_delete_dot_dot_dot);
-                correctMessage.setVisible(
-                        !showError
-                                && m.getType() == Message.TYPE_TEXT
-                                && !m.isGeoUri()
-                                && m.isLastCorrectableMessage()
-                                && singleOrOccupantId);
+                correctMessage.setVisible(canModifyMessage(m));
             } else {
                 moderateMessage.setVisible(false);
                 addReaction.setVisible(false);
                 correctMessage.setVisible(false);
             }
-            if (!m.isFileOrImage()
-                    && !encrypted
-                    && !m.isGeoUri()
-                    && !m.treatAsDownloadable()
-                    && !unInitiatedButKnownSize
-                    && t == null) {
+            if (canCopyMessage(m)) {
                 copyMessage.setVisible(true);
-                quoteMessage.setVisible(!showError && !MessageUtils.prepareQuote(m).isEmpty());
+                quoteMessage.setVisible(canQuoteMessage(m));
                 final var firstUri = Iterables.getFirst(Linkify.getLinks(m.getBody()), null);
                 if (firstUri != null) {
                     final var scheme = firstUri.getScheme();
@@ -1622,10 +1721,7 @@ public class ConversationFragment extends XmppFragment
             if (m.getEncryption() == Message.ENCRYPTION_DECRYPTION_FAILED && !deleted) {
                 retryDecryption.setVisible(true);
             }
-            if ((m.isFileOrImage() && !deleted && !receiving)
-                    || (m.getType() == Message.TYPE_TEXT && !m.treatAsDownloadable())
-                            && !unInitiatedButKnownSize
-                            && t == null) {
+            if (canShareMessage(m)) {
                 shareWith.setVisible(true);
             }
             if (m.getStatus() == Message.STATUS_SEND_FAILED) {
@@ -1680,7 +1776,7 @@ public class ConversationFragment extends XmppFragment
                     saveFile.setVisible(!path.sharedStorage());
                 }
             }
-            if (showError) {
+            if (showErrorMessageMenuItem(m)) {
                 showErrorMessage.setVisible(true);
             }
             final String mime = m.isFileOrImage() ? m.getMimeType() : null;
@@ -2913,12 +3009,18 @@ public class ConversationFragment extends XmppFragment
         this.binding.textInput.setKeyboardListener(this);
         this.messageListAdapter.updatePreferences();
         final var appSettings = new AppSettings(requireContext());
+        final var messageClickAction = appSettings.getMessageClickAction();
         this.inputSettings =
                 new InputSettings(
                         appSettings.isColorfulChatBubbles(),
                         appSettings.isDisplayEnterKey(),
                         appSettings.isEnterSend(),
-                        appSettings.isScrollToBottom());
+                        appSettings.isScrollToBottom(),
+                        messageClickAction);
+        this.messageListAdapter.setOnMessageClicked(
+                messageClickAction == AppSettings.MessageClickAction.DO_NOTHING
+                        ? null
+                        : this::onMessageClicked);
         this.mShowLastUserInteraction = appSettings.isBroadcastLastActivity();
         this.binding.textInput.refreshIme(this.inputSettings);
         setTextInputColors();
@@ -4213,5 +4315,6 @@ public class ConversationFragment extends XmppFragment
             boolean colorfulChatBubbles,
             boolean displayEnterKey,
             boolean enterIsSend,
-            boolean scrollToBottom) {}
+            boolean scrollToBottom,
+            AppSettings.MessageClickAction messageClickAction) {}
 }

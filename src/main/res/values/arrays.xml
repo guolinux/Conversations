@@ -18,6 +18,44 @@
 		<item>-1</item>
 	</integer-array>
 
+	<string-array name="quick_actions">
+		<item>@string/none</item>
+		<item>@string/recently_used</item>
+		<item>@string/attachment_choice_recording</item>
+		<item>@string/attachment_choice_camera</item>
+		<item>@string/attachment_choice_video</item>
+		<item>@string/attachment_choice_gallery</item>
+		<item>@string/attachment_choice_location</item>
+	</string-array>
+
+	<string-array name="quick_action_values">
+		<item>none</item>
+		<item>recent</item>
+		<item>RECORD_VOICE</item>
+		<item>TAKE_PHOTO</item>
+		<item>RECORD_VIDEO</item>
+		<item>CHOOSE_PICTURE</item>
+		<item>SEND_LOCATION</item>
+	</string-array>
+
+	<string-array name="message_click_actions">
+		<item>@string/none</item>
+		<item>@string/add_reaction</item>
+		<item>@string/share_with</item>
+		<item>@string/copy_to_clipboard</item>
+		<item>@string/quote</item>
+		<item>@string/correct_message</item>
+	</string-array>
+
+	<string-array name="message_click_action_values">
+		<item>DO_NOTHING</item>
+		<item>ADD_REACTION</item>
+		<item>SHARE</item>
+		<item>COPY</item>
+		<item>QUOTE</item>
+		<item>MODIFY</item>
+	</string-array>
+
 	<string-array name="picture_compression_values">
 		<item>never</item>
 		<item>auto</item>

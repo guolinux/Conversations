@@ -49,6 +49,7 @@ public class AppSettings {
     public static final String DISPLAY_ENTER_KEY = "display_enter_key";
     public static final String ENTER_IS_SEND = "enter_is_send";
     public static final String SCROLL_TO_BOTTOM = "scroll_to_bottom";
+    public static final String MESSAGE_CLICK_ACTION = "message_click_action";
 
     public static final String READ_RECEIPTS = "confirm_messages";
     public static final String ALLOW_MESSAGE_CORRECTION = "allow_message_correction";
@@ -361,6 +362,16 @@ public class AppSettings {
         return getBooleanPreference(SCROLL_TO_BOTTOM, R.bool.scroll_to_bottom);
     }
 
+    public MessageClickAction getMessageClickAction() {
+        final var setting =
+                getStringPreference(MESSAGE_CLICK_ACTION, R.string.message_click_action);
+        try {
+            return MessageClickAction.valueOf(setting);
+        } catch (final IllegalArgumentException e) {
+            return MessageClickAction.DO_NOTHING;
+        }
+    }
+
     public void setSendCrashReports(boolean value) {
         final SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(context);
@@ -435,5 +446,14 @@ public class AppSettings {
                 .edit()
                 .putLong(INSTALLATION_ID, installationId)
                 .apply();
+    }
+
+    public enum MessageClickAction {
+        DO_NOTHING,
+        ADD_REACTION,
+        SHARE,
+        COPY,
+        QUOTE,
+        MODIFY
     }
 }
