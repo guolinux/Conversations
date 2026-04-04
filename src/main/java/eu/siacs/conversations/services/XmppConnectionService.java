@@ -1135,6 +1135,7 @@ public class XmppConnectionService extends Service {
         }
         systemBroadcastFilter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
         systemBroadcastFilter.addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED);
+        systemBroadcastFilter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
         ContextCompat.registerReceiver(
                 this,
                 this.mInternalEventReceiver,
@@ -3670,6 +3671,7 @@ public class XmppConnectionService extends Service {
     }
 
     public void resendFailedMessages(final Message message, final boolean forceP2P) {
+        this.mNotificationService.clearFailedDelivery(message);
         message.setTime(System.currentTimeMillis());
         markMessage(message, Message.STATUS_WAITING);
         this.sendMessage(message, true, false, forceP2P);

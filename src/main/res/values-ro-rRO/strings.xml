@@ -263,9 +263,7 @@
     <string name="enable">Activează</string>
     <string name="conference_requires_password">Discuția de grup necesită o parolă</string>
     <string name="enter_password">Introduceți parola</string>
-    <string name="request_presence_updates">Vă rugăm să cereți mai întâi actualizări de prezență de la acest contact.
-\n
-\n<small>Acestea vor fi folosite pentru a determina ce aplicații folosește contactul dumneavoastră.</small>.</string>
+    <string name="request_presence_updates">Vă rugăm să cereți mai întâi actualizări de prezență de la acest contact.\n\n<small>Acestea vor fi folosite pentru a determina ce aplicații folosește contactul dumneavoastră</small>.</string>
     <string name="request_now">Cere acum</string>
     <string name="ignore">Ignora</string>
     <string name="without_mutual_presence_updates"><b>Atenție:</b> Trimițând aceasta fără actualizări de prezență reciproce ar putea produce probleme neprevazute.\n\n<small>Mergeți la \"Detalii contact\" pentru a verifica abonările la actualizările de prezență.</small></string>
@@ -385,10 +383,10 @@
     <string name="reply">Răspunde</string>
     <string name="mark_as_read">Marchează ca citit</string>
     <string name="pref_input_options">Opțiuni introducere text</string>
-    <string name="pref_enter_is_send">ENTER trimite</string>
+    <string name="pref_enter_is_send">Enter trimite</string>
     <string name="pref_enter_is_send_summary">Apasă tasta Enter pentru a trimite mesajul. Puteți mereu apăsa Ctrl-Enter pentru a trimite mesajul, chiar dacă această opțiune nu este activată.</string>
-    <string name="pref_display_enter_key">Arată tasta ENTER</string>
-    <string name="pref_display_enter_key_summary">Preschimbă tasta emoticon în ENTER</string>
+    <string name="pref_display_enter_key">Arată tasta Enter</string>
+    <string name="pref_display_enter_key_summary">Preschimbă tasta emoticon în Enter</string>
     <string name="audio">audio</string>
     <string name="video">video</string>
     <string name="image">imagine</string>
@@ -529,7 +527,7 @@
     <string name="presence_online">Conectat(ă)</string>
     <string name="presence_away">Plecat(ă)</string>
     <string name="presence_xa">Indisponibil(ă)</string>
-    <string name="presence_dnd">Ocupat(ă)</string>
+    <string name="presence_dnd">Nu deranjați</string>
     <string name="secure_password_generated">O parolă sigură a fost generată</string>
     <string name="device_does_not_support_battery_op">Dispozitivul dumneavoastră nu suportă dezactivarea optimizării de baterie pentru această aplicație</string>
     <string name="registration_please_wait">Înregistrare eșuată: Încercați din nou mai târziu</string>
@@ -551,7 +549,7 @@
     <string name="pref_theme_dark">Întunecat</string>
     <string name="unable_to_connect_to_keychain">Nu s-a putut face conectarea la OpenKeychain</string>
     <string name="this_device_is_no_longer_in_use">Acest dispozitiv nu mai este în uz</string>
-    <string name="type_pc">PC</string>
+    <string name="type_pc">Calculator</string>
     <string name="type_phone">Telefon mobil</string>
     <string name="type_tablet">Tabletă</string>
     <string name="type_web">Navigator internet</string>
@@ -658,7 +656,7 @@
     <string name="certificate_does_not_contain_jid">Certificatul nu conține o adresă XMPP</string>
     <string name="server_info_partial">parțial</string>
     <string name="attach_record_video">Înregistrare video</string>
-    <string name="copy_to_clipboard">Copiază în clipboard</string>
+    <string name="copy_to_clipboard">Copiază</string>
     <string name="message_copied_to_clipboard">Mesaj copiat în clipboard</string>
     <string name="message">Mesaj</string>
     <string name="private_messages_are_disabled">Mesajele private sunt dezactivate</string>
@@ -1188,4 +1186,6 @@
     <string name="pref_sync_system_dnd_summary">Setați automat starea dvs. la \"Nu deranjați\" atunci când modul Android este activ.</string>
     <string name="pref_include_silent_modes">Include modurile silențioase</string>
     <string name="pref_include_silent_modes_summary">Semnalează \"Nu deranjați\" și atunci când notificările sunt dezactivate sau telefonul este pe vibrație.</string>
+    <string name="presence_offline">Deconectat</string>
+    <string name="rtp_state_no_internet">Fără conexiune Internet</string>
 </resources>

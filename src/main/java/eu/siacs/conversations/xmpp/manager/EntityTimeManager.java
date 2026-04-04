@@ -13,6 +13,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import eu.siacs.conversations.AppSettings;
 import eu.siacs.conversations.Config;
+import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xmpp.Jid;
@@ -32,6 +33,8 @@ import java.util.Set;
 import org.jspecify.annotations.NonNull;
 
 public class EntityTimeManager extends AbstractManager {
+
+    private static final Duration DURATION_RECENT_MESSAGE = Duration.ofMinutes(12);
 
     private final CacheLoader<Jid, ListenableFuture<EntityTime>> entityTimeLoader =
             new CacheLoader<>() {
@@ -152,7 +155,11 @@ public class EntityTimeManager extends AbstractManager {
             return Futures.immediateFailedFuture(
                     new IllegalStateException("Requesting entity time is disabled"));
         }
-        // TODO check isShownContactList
+        final var contact = getManager(RosterManager.class).getContactFromContactList(address);
+        if (contact == null) {
+            return Futures.immediateFailedFuture(
+                    new IllegalStateException("Requesting entity time is limited to contacts"));
+        }
         return Futures.transform(
                 getEntityTimes(address),
                 entityTimes -> {
@@ -191,6 +198,11 @@ public class EntityTimeManager extends AbstractManager {
     public static boolean isDifferentTimeZone(final ZonedDateTime zonedDateTime) {
         final var local = ZonedDateTime.now();
         return !local.getOffset().equals(zonedDateTime.getOffset());
+    }
+
+    public static boolean noRecentMessages(final Conversation conversation) {
+        final var duration = Duration.between(conversation.getLastReceived(), Instant.now());
+        return DURATION_RECENT_MESSAGE.compareTo(duration) < 0;
     }
 
     public sealed interface EntityTime {}
