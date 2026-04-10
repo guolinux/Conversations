@@ -44,6 +44,8 @@ public class AppSettings {
     public static final String ALLOW_SCREENSHOTS = "allow_screenshots";
     public static final String RINGTONE = "call_ringtone";
     public static final String DISPLAY_ENTER_KEY = "display_enter_key";
+    public static final String ENTER_IS_SEND = "enter_is_send";
+    public static final String SCROLL_TO_BOTTOM = "scroll_to_bottom";
 
     public static final String READ_RECEIPTS = "confirm_messages";
     public static final String ALLOW_MESSAGE_CORRECTION = "allow_message_correction";
@@ -69,6 +71,7 @@ public class AppSettings {
     public static final String BACKUP_LOCATION = "backup_location";
     public static final String AUTO_ACCEPT_FILE_SIZE = "auto_accept_file_size";
     public static final String VIDEO_COMPRESSION = "video_compression";
+    public static final String AUTO_SEND_RECORDING = "auto_send_recording";
 
     private static final String ACCEPT_INVITES_FROM_STRANGERS = "accept_invites_from_strangers";
     private static final String NOTIFICATIONS_FROM_STRANGERS = "notifications_from_strangers";
@@ -155,6 +158,10 @@ public class AppSettings {
 
     public boolean isShowAvatarsAccounts() {
         return getBooleanPreference(SHOW_AVATARS_ACCOUNTS, R.bool.show_avatars_accounts);
+    }
+
+    public boolean isAutoSendRecording() {
+        return getBooleanPreference(AUTO_SEND_RECORDING, R.bool.auto_send_recording);
     }
 
     public boolean isCallIntegration() {
@@ -337,6 +344,14 @@ public class AppSettings {
 
     public boolean isDisplayEnterKey() {
         return getBooleanPreference(DISPLAY_ENTER_KEY, R.bool.display_enter_key);
+    }
+
+    public boolean isEnterSend() {
+        return getBooleanPreference(ENTER_IS_SEND, R.bool.enter_is_send);
+    }
+
+    public boolean isScrollToBottom() {
+        return getBooleanPreference(SCROLL_TO_BOTTOM, R.bool.scroll_to_bottom);
     }
 
     public void setSendCrashReports(boolean value) {

@@ -18,7 +18,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.net.Uri;
@@ -26,7 +25,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -49,11 +47,14 @@ import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
@@ -78,6 +79,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import de.gultsch.common.Linkify;
 import de.gultsch.common.MiniUri;
 import de.gultsch.common.Patterns;
+import eu.siacs.conversations.AppSettings;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.crypto.PgpEngine;
@@ -217,6 +219,7 @@ public class ConversationFragment extends XmppFragment
     private final PendingItem<String> pendingReplyMessageUuid = new PendingItem<>();
     private final PendingItem<String> pendingReplyTo = new PendingItem<>();
     private final MediaPreviewAdapter mediaPreviewAdapter = new MediaPreviewAdapter(this);
+    private InputSettings inputSettings = new InputSettings(true, false, false, true);
     private static final int REPLY_TARGET_TOP_OFFSET_DP = 32;
     private static final int REPLY_SCROLL_SHORT_MS = 120;
     public Uri mPendingEditorContent = null;
@@ -1086,10 +1089,6 @@ public class ConversationFragment extends XmppFragment
         }
     }
 
-    public void setupIme() {
-        this.binding.textinput.refreshIme();
-    }
-
     private void handleActivityResult(ActivityResult activityResult) {
         if (activityResult.resultCode == AppCompatActivity.RESULT_OK) {
             handlePositiveActivityResult(activityResult.requestCode, activityResult.data);
@@ -1131,15 +1130,22 @@ public class ConversationFragment extends XmppFragment
                 break;
             case ATTACHMENT_CHOICE_CHOOSE_FILE:
             case ATTACHMENT_CHOICE_RECORD_VIDEO:
-            case ATTACHMENT_CHOICE_RECORD_VOICE:
-                final Attachment.Type type =
-                        requestCode == ATTACHMENT_CHOICE_RECORD_VOICE
-                                ? Attachment.Type.RECORDING
-                                : Attachment.Type.FILE;
                 final List<Attachment> fileUris =
-                        Attachment.extractAttachments(requireContext(), data, type);
+                        Attachment.extractAttachments(requireContext(), data, Attachment.Type.FILE);
                 mediaPreviewAdapter.addMediaPreviews(fileUris);
                 toggleInputMethod();
+                break;
+            case ATTACHMENT_CHOICE_RECORD_VOICE:
+                final List<Attachment> recordings =
+                        Attachment.extractAttachments(
+                                requireContext(), data, Attachment.Type.RECORDING);
+                final boolean autoSendRecording =
+                        data.getBooleanExtra(RecordingActivity.EXTRA_AUTO_SEND_RECORDING, false);
+                mediaPreviewAdapter.addMediaPreviews(recordings);
+                toggleInputMethod();
+                if (autoSendRecording) {
+                    commitAttachments();
+                }
                 break;
             case ATTACHMENT_CHOICE_LOCATION:
                 final double latitude = data.getDoubleExtra("latitude", 0);
@@ -2891,7 +2897,7 @@ public class ConversationFragment extends XmppFragment
             messageListAdapter.stopAudioPlayer();
         }
         if (this.conversation != null) {
-            final String msg = this.binding.textinput.getText().toString();
+            final String msg = CharSequences.nullToEmpty(this.binding.textinput.getText());
             storeNextMessage(msg);
             updateChatState(this.conversation, msg);
             requireXmppActivity()
@@ -2913,7 +2919,7 @@ public class ConversationFragment extends XmppFragment
             return;
         }
         Log.d(Config.LOGTAG, "ConversationFragment.saveMessageDraftStopAudioPlayer()");
-        final String msg = this.binding.textinput.getText().toString();
+        final String msg = CharSequences.nullToEmpty(this.binding.textinput.getText());
         storeNextMessage(msg);
         updateChatState(this.conversation, msg);
         messageListAdapter.stopAudioPlayer();
@@ -2970,8 +2976,6 @@ public class ConversationFragment extends XmppFragment
             this.conversation.trim();
         }
 
-        setupIme();
-
         final boolean scrolledToBottomAndNoPending =
                 this.scrolledToBottom() && pendingScrollState.peek() == null;
 
@@ -2988,7 +2992,16 @@ public class ConversationFragment extends XmppFragment
             this.binding.textinput.setText(MessageUtils.EMPTY_STRING);
         }
         this.binding.textinput.setKeyboardListener(this);
-        messageListAdapter.updatePreferences();
+        this.messageListAdapter.updatePreferences();
+        final var appSettings = new AppSettings(requireContext());
+        this.inputSettings =
+                new InputSettings(
+                        appSettings.isColorfulChatBubbles(),
+                        appSettings.isDisplayEnterKey(),
+                        appSettings.isEnterSend(),
+                        appSettings.isScrollToBottom());
+        this.binding.textinput.refreshIme(this.inputSettings);
+        setTextInputColors();
         refresh(false);
         requireXmppActivity().invalidateOptionsMenu();
         this.conversation.messagesLoaded.set(true);
@@ -3031,6 +3044,50 @@ public class ConversationFragment extends XmppFragment
         }
 
         return true;
+    }
+
+    private void setTextInputColors() {
+        final var colorfulChatBubbles = this.inputSettings.colorfulChatBubbles();
+        final var bubbleColor =
+                colorfulChatBubbles
+                        ? MessageAdapter.BubbleColor.TERTIARY
+                        : MessageAdapter.BubbleColor.SURFACE_HIGH;
+        this.binding.textinput.setTextColor(
+                MessageAdapter.bubbleToOnSurfaceColor(this.binding.textinput, bubbleColor));
+        this.binding.textInputHint.setTextColor(
+                MessageAdapter.bubbleToOnSurfaceColor(this.binding.textInputHint, bubbleColor));
+        MessageAdapter.setBackgroundTint(this.binding.inputLayout, bubbleColor);
+        if (bubbleColor == MessageAdapter.BubbleColor.TERTIARY) {
+            this.binding.textinput.setHintTextColor(
+                    ContextCompat.getColorStateList(
+                            requireContext(), R.color.hint_on_tertiary_container));
+            setTextCursorDrawable(this.binding.textinput, R.drawable.cursor_on_tertiary_container);
+        } else {
+            this.binding.textinput.setHintTextColor(
+                    ContextCompat.getColorStateList(requireContext(), R.color.hint_on_surface));
+            setTextCursorDrawable(this.binding.textinput, R.drawable.cursor_on_surface);
+        }
+    }
+
+    private static void setTextCursorDrawable(
+            final EditText editText, @DrawableRes final int drawable) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            editText.setTextCursorDrawable(drawable);
+        } else {
+            setTextCursorDrawableCompat(editText, drawable);
+        }
+    }
+
+    @SuppressLint("PrivateApi")
+    private static void setTextCursorDrawableCompat(
+            final EditText editText, @DrawableRes final int drawable) {
+        try {
+            final var field = TextView.class.getDeclaredField("mCursorDrawableRes");
+            field.setAccessible(true);
+            field.set(editText, drawable);
+        } catch (final NoSuchFieldException | IllegalAccessException e) {
+            Log.w(Config.LOGTAG, "could not set cursor drawable", e);
+        }
     }
 
     private void resetUnreadMessagesCount() {
@@ -3356,12 +3413,7 @@ public class ConversationFragment extends XmppFragment
         storeNextMessage();
         clearReplyTarget();
         updateChatMsgHint();
-        SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        final boolean prefScrollToBottom =
-                p.getBoolean(
-                        "scroll_to_bottom",
-                        requireContext().getResources().getBoolean(R.bool.scroll_to_bottom));
-        if (prefScrollToBottom || scrolledToBottom()) {
+        if (this.inputSettings.scrollToBottom() || scrolledToBottom()) {
             new Handler()
                     .post(
                             () -> {
@@ -3415,8 +3467,7 @@ public class ConversationFragment extends XmppFragment
     }
 
     public void updateSendButton() {
-        boolean hasAttachments =
-                mediaPreviewAdapter != null && mediaPreviewAdapter.hasAttachments();
+        final var hasAttachments = mediaPreviewAdapter.hasAttachments();
         final Conversation c = this.conversation;
         final var connection = c.getAccount().getXmppConnection();
         final Presence.Availability status;
@@ -3835,16 +3886,11 @@ public class ConversationFragment extends XmppFragment
 
     @Override
     public boolean onEnterPressed(final boolean isCtrlPressed) {
-        if (isCtrlPressed || enterIsSend()) {
+        if (isCtrlPressed || this.inputSettings.enterIsSend()) {
             sendMessage();
             return true;
         }
         return false;
-    }
-
-    private boolean enterIsSend() {
-        final SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        return p.getBoolean("enter_is_send", getResources().getBoolean(R.bool.enter_is_send));
     }
 
     public boolean onArrowUpCtrlPressed() {
@@ -4164,4 +4210,10 @@ public class ConversationFragment extends XmppFragment
         }
         throw new IllegalStateException("Fragment not attached to ConversationsActivity");
     }
+
+    public record InputSettings(
+            boolean colorfulChatBubbles,
+            boolean displayEnterKey,
+            boolean enterIsSend,
+            boolean scrollToBottom) {}
 }
