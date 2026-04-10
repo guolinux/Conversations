@@ -1175,5 +1175,8 @@
     <string name="pref_include_silent_modes_summary">Também definir \"Não Perturbar\" quando as notificações estão silenciadas ou o telemóvel está em modo vibrar.</string>
     <string name="presence_offline">Offline</string>
     <string name="rtp_state_no_internet">Sem conexão à internet</string>
+    <string name="send">Enviar</string>
+    <string name="pref_auto_send_recording">Auto enviar gravações</string>
+    <string name="pref_auto_send_recording_summary">Envia mensagens de voz automaticamente quando acaba de gravar.</string>
     <string name="reply_to_message">Responder</string>
 </resources>
