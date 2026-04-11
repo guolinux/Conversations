@@ -494,7 +494,7 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         setTextSize(viewHolder.messageBody(), this.bubbleDesign.largeFont);
         viewHolder.messageBody().setTypeface(null, Typeface.NORMAL);
         final var rawBodyWithFallback = message.getBody();
-        final var rawBody = (message.getReplyFallbackFrom() != null && message.getReplyFallbackTo() != null) ?
+        final var rawBody = (!Strings.isNullOrEmpty(message.getReplyMessageUuid()) && message.getReplyFallbackFrom() != null && message.getReplyFallbackTo() != null) ?
                 (
                         rawBodyWithFallback.substring(0, Integer.parseInt(message.getReplyFallbackFrom())) +
                         rawBodyWithFallback.substring(Integer.parseInt(message.getReplyFallbackTo()))
