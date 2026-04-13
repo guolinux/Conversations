@@ -14,5 +14,4 @@
     <string name="if_contact_is_nearby_use_qr">Si el teu contacte està a prop, també pot escanejar el codi de baix per a acceptar la teva invitació.</string>
     <string name="share_invite_with">Comparteix la invitació amb…</string>
     <string name="easy_invite_share_text">Uneix-te %1$s i xerra amb mi: %2$s</string>
-    <string name="share_invite_with">Comparteix la invitació amb...</string>
 </resources>
