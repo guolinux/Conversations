@@ -1555,7 +1555,7 @@ public class MessageAdapter extends ArrayAdapter<Message> {
         audioPlayer.startStopPending();
     }
 
-    public void openDownloadable(Message message) {
+    public void openDownloadable(final Message message) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
                 && ContextCompat.checkSelfPermission(
                                 activity, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -1568,7 +1568,7 @@ public class MessageAdapter extends ArrayAdapter<Message> {
             return;
         }
         final var file = activity.xmppConnectionService.getFileBackend().getFile(message);
-        ViewUtil.view(activity, file);
+        ViewUtil.view(activity, file, message.getUuid());
     }
 
     private void showLocation(Message message) {

@@ -23,6 +23,7 @@ import eu.siacs.conversations.crypto.axolotl.SQLiteAxolotlStore;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Contact;
 import eu.siacs.conversations.entities.Conversation;
+import eu.siacs.conversations.entities.IndividualMessage;
 import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.entities.PresenceTemplate;
 import eu.siacs.conversations.services.QuickConversationsService;
@@ -1508,12 +1509,10 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                         null,
                         null,
                         null);
-        while (cursor != null && cursor.moveToNext()) {
+        while (cursor.moveToNext()) {
             uuids.add(cursor.getString(0));
         }
-        if (cursor != null) {
-            cursor.close();
-        }
+        cursor.close();
         markFileAsDeleted(uuids);
         return uuids;
     }
@@ -1586,6 +1585,27 @@ public class DatabaseBackend extends SQLiteOpenHelper {
         return filesPaths;
     }
 
+    public Set<String> getExistingUrlsForPath(final String account, final String path) {
+        final var builder = new ImmutableList.Builder<Message.FileParams>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        final String sql =
+                "select body from messages join conversations on"
+                    + " messages.conversationUuid=conversations.uuid where relativeFilePath=? and"
+                    + " conversations.accountUuid=? and messages.status<>0 ORDER BY"
+                    + " messages.timeSent desc LIMIT 3";
+        final String[] args = {path, account};
+        try (final Cursor cursor = db.rawQuery(sql, args)) {
+            while (cursor.moveToNext()) {
+                builder.add(Message.FileParams.of(cursor.getString(0)));
+            }
+        }
+        final var parameters = builder.build();
+        return ImmutableSet.copyOf(
+                Collections2.transform(
+                        Collections2.filter(parameters, p -> Objects.requireNonNull(p).url != null),
+                        p -> Objects.requireNonNull(p).url));
+    }
+
     public Message getMessageWithServerMsgId(
             final Conversation conversation, final String messageId) {
         final var db = this.getReadableDatabase();
@@ -1620,6 +1640,21 @@ public class DatabaseBackend extends SQLiteOpenHelper {
         final Message message;
         if (cursor.moveToFirst()) {
             message = Message.fromCursor(context, cursor, conversation);
+        } else {
+            message = null;
+        }
+        cursor.close();
+        return message;
+    }
+
+    public Message getIndividualMessage(final String uuid) {
+        final var db = this.getReadableDatabase();
+        final String sql = "select * from messages where uuid=? LIMIT 1";
+        final String[] args = {uuid};
+        final Cursor cursor = db.rawQuery(sql, args);
+        final Message message;
+        if (cursor.moveToFirst()) {
+            message = IndividualMessage.fromCursor(context, cursor, null);
         } else {
             message = null;
         }

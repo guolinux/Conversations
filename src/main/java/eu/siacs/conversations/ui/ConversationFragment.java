@@ -216,6 +216,21 @@ public class ConversationFragment extends XmppFragment
     private final PendingItem<ScrollState> pendingScrollState = new PendingItem<>();
     private final PendingItem<String> pendingLastMessageUuid = new PendingItem<>();
     private final PendingItem<Message> pendingMessage = new PendingItem<>();
+    private final MediaPreviewAdapter mediaPreviewAdapter =
+            new MediaPreviewAdapter(
+                    this,
+                    attachment -> {
+                        final var file = FileBackend.getFile(attachment.getUri());
+                        if (file.isPresent()
+                                && new FileBackend.Cache(requireContext())
+                                        .isCachedFile(file.get())) {
+                            if (file.get().delete()) {
+                                Log.d(
+                                        Config.LOGTAG,
+                                        "deleted temporary file " + file.get().getAbsolutePath());
+                            }
+                        }
+                    });
     private final PendingItem<String> pendingReplyMessageUuid = new PendingItem<>();
     private final PendingItem<String> pendingReplyTo = new PendingItem<>();
     private final MediaPreviewAdapter mediaPreviewAdapter = new MediaPreviewAdapter(this);
@@ -2002,10 +2017,38 @@ public class ConversationFragment extends XmppFragment
         requireActivity().invalidateOptionsMenu();
     }
 
-    private void checkPermissionAndTriggerAudioCall() {
-        if (requireXmppActivity().mUseTor || conversation.getAccount().isOnion()) {
-            Toast.makeText(requireContext(), R.string.disable_tor_to_make_call, Toast.LENGTH_SHORT)
+    private boolean isAccountInsufficientState() {
+        final var account = conversation.getAccount();
+        if (account.isConnectionEnabled()) {
+            if (new AppSettings(requireContext()).isUseTor() || account.isOnion()) {
+                Toast.makeText(
+                                requireContext(),
+                                R.string.disable_tor_to_make_call,
+                                Toast.LENGTH_SHORT)
+                        .show();
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setMessage(R.string.this_account_is_disabled)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(
+                            R.string.enable,
+                            (dialog, which) -> {
+                                account.setOption(Account.OPTION_SOFT_DISABLED, false);
+                                account.setOption(Account.OPTION_DISABLED, false);
+                                requireXmppActivity().xmppConnectionService.updateAccount(account);
+                            })
+                    .create()
                     .show();
+            return true;
+        }
+    }
+
+    private void checkPermissionAndTriggerAudioCall() {
+        if (isAccountInsufficientState()) {
             return;
         }
         final List<String> permissions;
@@ -2023,9 +2066,7 @@ public class ConversationFragment extends XmppFragment
     }
 
     private void checkPermissionAndTriggerVideoCall() {
-        if (requireXmppActivity().mUseTor || conversation.getAccount().isOnion()) {
-            Toast.makeText(requireContext(), R.string.disable_tor_to_make_call, Toast.LENGTH_SHORT)
-                    .show();
+        if (isAccountInsufficientState()) {
             return;
         }
         final List<String> permissions;
@@ -2560,7 +2601,7 @@ public class ConversationFragment extends XmppFragment
         } else {
             final var file =
                     requireXmppActivity().xmppConnectionService.getFileBackend().getFile(message);
-            ViewUtil.view(requireContext(), file);
+            ViewUtil.view(requireContext(), file, message.getUuid());
         }
     }
 
