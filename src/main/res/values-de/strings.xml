@@ -735,7 +735,7 @@
     <string name="security_violation_not_attaching_file">Datei wurde aufgrund von Sicherheitsverletzungen ausgelassen.</string>
     <string name="pref_video_compression">Videoqualität</string>
     <string name="pref_video_compression_summary">Geringere Qualität ermöglicht kleinere Dateien</string>
-    <string name="video_360p">Mittel (360p)</string>
+    <string name="video_360p">Niedrig (360p)</string>
     <string name="video_720p">Hoch (720p)</string>
     <string name="cancelled">abgebrochen</string>
     <string name="already_drafting_message">Du bist bereits dabei, eine Nachricht zu verfassen.</string>
@@ -1025,9 +1025,9 @@
     <string name="detect_mim_summary">Kanalbindung kann einige Machine-in-the-Middle-Angriffe erkennen</string>
     <string name="detect_mim">Kanalbindung erfordern</string>
     <string name="pref_category_server_connection">Serververbindung</string>
-    <string name="pref_privacy_summary">Tipp-Benachrichtigung, Zuletzt genutzt, Status</string>
+    <string name="pref_privacy_summary">Tipp-Benachrichtigung, Zuletzt genutzt, P2P-Verbindungen</string>
     <string name="pref_connection_summary">Hostname &amp; Port, Tor</string>
-    <string name="pref_connection_summary_w_cd">Hostname &amp; Port, Tor, P2P, Channelsuche</string>
+    <string name="pref_connection_summary_w_cd">Hostname &amp; Port, Tor, Channelsuche</string>
     <string name="pref_category_application">Anwendung</string>
     <string name="pref_category_interaction">Interaktion</string>
     <string name="pref_up_long_summary">Beim Einsatz als UnifiedPush-Verteiler wird die dauerhafte, zuverlässige und akkuschonende XMPP-Verbindung genutzt, um andere UnifiedPush-kompatible Apps wie Tusky, Ltt.rs, FluffyChat und andere aufzuwecken.</string>
@@ -1172,5 +1172,10 @@
     <string name="send">Senden</string>
     <string name="pref_auto_send_recording">Sprachnachrichten direkt senden</string>
     <string name="pref_auto_send_recording_summary">Sprachnachrichten nach dem Abschluss der Aufnahme direkt versenden.</string>
+    <string name="pref_presence_settings_summary">Abwesend bei gesperrtem Gerät, Systemsynchronisierung von „Bitte nicht stören“</string>
+    <string name="video_1080p">Sehr hoch (1080p)</string>
+    <string name="video_480p">Mittel (480p)</string>
+    <string name="pref_save_to_gallery">In Galerie speichern</string>
+    <string name="pref_save_to_gallery_summary">Medien werden automatisch in öffentlichen Ordnern gespeichert, sodass sie in deiner Galerie und deinem Dateimanager angezeigt werden.</string>
     <string name="reply_to_message">Antworten</string>
 </resources>
