@@ -175,7 +175,7 @@
     <string name="unpublish_pgp_message">Bist du sicher, dass du deinen öffentlichen OpenPGP-Schlüssel aus deiner Anwesenheitsmitteilung entfernen möchtest?\nDeine Kontakte können dir dann keine OpenPGP-verschlüsselten Nachrichten senden.</string>
     <string name="openpgp_has_been_published">Öffentlicher OpenPGP-Schlüssel veröffentlicht.</string>
     <string name="mgmt_account_enable">Konto aktivieren </string>
-    <string name="mgmt_account_delete_confirm_text">Bist du sicher, dass du dein Konto möchtest? Dies wird deinen gesamten Chatverlauf entfernen</string>
+    <string name="mgmt_account_delete_confirm_text">Bist du sicher, dass du dein Konto löschen möchtest? Dies wird deinen gesamten Chatverlauf entfernen</string>
     <string name="attach_record_voice">Sprache aufzeichnen</string>
     <string name="account_settings_jabber_id">XMPP-Adresse</string>
     <string name="block_jabber_id">XMPP-Adresse sperren</string>
@@ -500,7 +500,7 @@
     <string name="selection_too_large">Der ausgewählte Bereich ist zu groß</string>
     <string name="no_accounts">(Keine aktivierten Konten)</string>
     <string name="this_field_is_required">Dieses Feld ist erforderlich</string>
-    <string name="correct_message">Ändern</string>
+    <string name="correct_message">Bearbeiten</string>
     <string name="send_corrected_message">Geänderte Nachricht senden</string>
     <string name="no_keys_just_confirm">Du hast den Fingerabdruck dieser Person bereits verifiziert. Durch Auswählen von \"Fertig\" bestätigst du nur, dass %s Teil dieses Gruppenchats ist.</string>
     <string name="this_account_is_disabled">Du hast dieses Konto deaktiviert</string>
@@ -745,7 +745,7 @@
     <string name="phone_number">Telefonnummer</string>
     <string name="verify_your_phone_number">Telefonnummer überprüfen</string>
     <string name="enter_country_code_and_phone_number">Quicksy sendet eine SMS-Nachricht (es können Gebühren anfallen), um deine Telefonnummer zu überprüfen. Gib deine Landesvorwahl und Telefonnummer ein:</string>
-    <string name="we_will_be_verifying"><![CDATA[Wir werden die Telefonnummer <br/><br/><b>%s</b><br/><br/>überprüfen. Ist diese in Ordnung oder möchtest du die Nummer bearbeiten?]]></string>
+    <string name="we_will_be_verifying"><![CDATA[Wir werden die Telefonnummer <br><br><b>%s</b><br><br>überprüfen. Ist diese in Ordnung oder möchtest du die Nummer bearbeiten?]]></string>
     <string name="not_a_valid_phone_number">%s ist keine gültige Telefonnummer.</string>
     <string name="please_enter_your_phone_number">Gib bitte deine Telefonnummer ein.</string>
     <string name="search_countries">Land suchen</string>
@@ -850,7 +850,7 @@
     <string name="unable_to_perform_this_action">Diese Aktion konnte nicht durchgeführt werden</string>
     <string name="open_join_dialog">Öffentlichen Channel beitreten…</string>
     <string name="sharing_application_not_grant_permission">Die teilende App hat keine Berechtigung für den Zugriff auf diese Datei erteilt.</string>
-    <string name="group_chats_and_channels"><![CDATA[Gruppenchats & Channels]]></string>
+    <string name="group_chats_and_channels"><![CDATA[Gruppenchats &amp; Channels]]></string>
     <string name="jabber_network">jabber.network</string>
     <string name="local_server">Lokaler Server</string>
     <string name="pref_channel_discovery_summary">Die meisten Benutzer sollten hier ‘jabber.network’ auswählen, um bessere Vorschläge aus dem gesamten, öffentlichen XMPP-Ökosystem zu bekommen.</string>
@@ -1176,5 +1176,25 @@
     <string name="video_480p">Mittel (480p)</string>
     <string name="pref_save_to_gallery">In Galerie speichern</string>
     <string name="pref_save_to_gallery_summary">Medien werden automatisch in öffentlichen Ordnern gespeichert, sodass sie in deiner Galerie und deinem Dateimanager angezeigt werden.</string>
+    <plurals name="delete_files_dialog">
+        <item quantity="one">Datei löschen</item>
+        <item quantity="other">%d Dateien löschen</item>
+    </plurals>
+    <plurals name="delete_files_dialog_msg">
+        <item quantity="one">Willst du diese Datei wirklich löschen?</item>
+        <item quantity="other">Willst du diese Dateien wirklich löschen?</item>
+    </plurals>
+    <plurals name="attachments_saved">
+        <item quantity="one">%d Datei gespeichert</item>
+        <item quantity="other">%d Dateien gespeichert</item>
+    </plurals>
+    <string name="could_not_save_files">Dateien konnten nicht gespeichert werden</string>
+    <string name="filter_type_images">Bilder</string>
+    <string name="filter_type_videos">Videos</string>
+    <string name="filter_type_audio">Audio</string>
+    <string name="filter_type_documents">Dokumente</string>
+    <string name="filter_type_other">Andere</string>
+    <string name="filter_media">Medien filtern</string>
+    <string name="apply_filter">Anwenden</string>
     <string name="reply_to_message">Antworten</string>
 </resources>

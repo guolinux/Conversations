@@ -737,7 +737,7 @@
     <string name="phone_number">номер телефону</string>
     <string name="verify_your_phone_number">Перевірте номер телефону</string>
     <string name="enter_country_code_and_phone_number">Quicksy надішле SMS, щоб перевірити Ваш номер телефону. Тарифами Вашого оператора може бути передбачено плату за отримання SMS. Зазначте код Вашої країни та номер телефону:</string>
-    <string name="we_will_be_verifying"><![CDATA[Ми перевіримо номер телефону<br/><br/><b>%s</b><br/><br/>Гаразд чи бажаєте вказати інший номер?]]></string>
+    <string name="we_will_be_verifying"><![CDATA[Ми перевіримо номер телефону<br><br><b>%s</b><br><br>Гаразд чи бажаєте вказати інший номер?]]></string>
     <string name="not_a_valid_phone_number">%s не є дійсним номером телефону.</string>
     <string name="please_enter_your_phone_number">Будь ласка, введіть свій номер телефону.</string>
     <string name="search_countries">Шукати країну</string>
@@ -1226,5 +1226,31 @@
     <string name="video_1080p">Дуже висока (1080p)</string>
     <string name="pref_save_to_gallery_summary">Автоматично зберігати медіафайли у загальнодоступних папках, щоб вони відображалися у Вашій галереї та файловому менеджері.</string>
     <string name="pref_save_to_gallery">Зберігати в галерею</string>
+    <plurals name="delete_files_dialog">
+        <item quantity="one">Видалити %d файл</item>
+        <item quantity="few">Видалити %d файли</item>
+        <item quantity="many">Видалити %d файлів</item>
+        <item quantity="other">Видалити %d файлів</item>
+    </plurals>
+    <plurals name="delete_files_dialog_msg">
+        <item quantity="one">Ви впевнені, що хочете вилучити цей файл?</item>
+        <item quantity="few">Ви впевнені, що хочете вилучити ці файли?</item>
+        <item quantity="many">Ви впевнені, що хочете вилучити ці файли?</item>
+        <item quantity="other">Ви впевнені, що хочете вилучити ці файли?</item>
+    </plurals>
+    <plurals name="attachments_saved">
+        <item quantity="one">%d файл збережено</item>
+        <item quantity="few">%d файли збережено</item>
+        <item quantity="many">%d файлів збережено</item>
+        <item quantity="other">%d файлів збережено</item>
+    </plurals>
+    <string name="could_not_save_files">Не вдалося зберегти файли</string>
+    <string name="filter_type_other">Інше</string>
+    <string name="apply_filter">Застосувати</string>
+    <string name="filter_type_images">Зображення</string>
+    <string name="filter_type_videos">Відео</string>
+    <string name="filter_type_audio">Аудіо</string>
+    <string name="filter_type_documents">Документи</string>
+    <string name="filter_media">Фільтр файлів</string>
     <string name="reply_to_message">Відповісти</string>
 </resources>

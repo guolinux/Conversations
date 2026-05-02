@@ -29,11 +29,15 @@ import androidx.annotation.StringRes;
 import androidx.core.content.FileProvider;
 import androidx.exifinterface.media.ExifInterface;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import eu.siacs.conversations.AppSettings;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
@@ -59,7 +63,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class FileBackend {
@@ -69,22 +75,6 @@ public class FileBackend {
     private static final String FILE_PROVIDER = ".files";
     private static final float IGNORE_PADDING = 0.15f;
     private final XmppConnectionService mXmppConnectionService;
-
-    private static final List<String> STORAGE_TYPES;
-
-    static {
-        final ImmutableList.Builder<String> builder =
-                new ImmutableList.Builder<String>()
-                        .add(
-                                Environment.DIRECTORY_DOWNLOADS,
-                                Environment.DIRECTORY_PICTURES,
-                                Environment.DIRECTORY_MOVIES,
-                                Environment.DIRECTORY_DOCUMENTS);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            builder.add(Environment.DIRECTORY_RECORDINGS);
-        }
-        STORAGE_TYPES = builder.build();
-    }
 
     public FileBackend(XmppConnectionService service) {
         this.mXmppConnectionService = service;
@@ -479,11 +469,11 @@ public class FileBackend {
         return bitmap;
     }
 
-    public void updateMediaScanner(File file) {
+    public void updateMediaScanner(final File file) {
         updateMediaScanner(file, null);
     }
 
-    public void updateMediaScanner(File file, final Runnable callback) {
+    public void updateMediaScanner(final File file, final Runnable callback) {
         MediaScannerConnection.scanFile(
                 mXmppConnectionService,
                 new String[] {file.getAbsolutePath()},
@@ -493,14 +483,12 @@ public class FileBackend {
                     public void onMediaScannerConnected() {}
 
                     @Override
-                    public void onScanCompleted(String path, Uri uri) {
-                        if (callback != null && file.getAbsolutePath().equals(path)) {
+                    public void onScanCompleted(final String path, final Uri uri) {
+                        if (!file.getAbsolutePath().equals(path)) {
+                            Log.w(Config.LOGTAG, "media scanner scanned wrong file");
+                        }
+                        if (callback != null) {
                             callback.run();
-                        } else {
-                            Log.d(Config.LOGTAG, "media scanner scanned wrong file");
-                            if (callback != null) {
-                                callback.run();
-                            }
                         }
                     }
                 });
@@ -535,24 +523,21 @@ public class FileBackend {
         }
     }
 
-    public File getFile(Message message) {
+    public File getFile(final Message message) {
         return getFile(message, true);
     }
 
-    public File getFile(final Message message, final boolean decrypted) {
+    public File getFile(final Message message, final boolean cleartext) {
         final boolean encrypted =
-                !decrypted
+                !cleartext
                         && (message.getEncryption() == Message.ENCRYPTION_PGP
                                 || message.getEncryption() == Message.ENCRYPTION_DECRYPTED);
         final var storageLocation = message.getRelativeFilePath();
-        // TODO if storage location is null trigger getLegacy with path=UUID and mime type from
-        // message
-        // TODO log this to make sure it's not happening accidentally
-        // TODO use getLegacyFileForFilename(uuid, mime);
         final File file;
         if (storageLocation != null) {
             file = storageLocation.file();
         } else {
+            Log.w(Config.LOGTAG, "accessing old file w/o storage location. inferring from UUID");
             file =
                     getLegacyFileForFilename(
                             mXmppConnectionService, message.getUuid(), message.getMimeType());
@@ -624,9 +609,10 @@ public class FileBackend {
     }
 
     private void copyFileToPrivateStorage(final File file, final Uri uri) throws FileCopyException {
-        final var parentDirectory = file.getParentFile();
-        if (parentDirectory != null && parentDirectory.mkdirs()) {
-            Log.d(Config.LOGTAG, "created directory " + parentDirectory.getAbsolutePath());
+        final var parent = file.getParentFile();
+        if (parent != null && parent.mkdirs()) {
+            Log.d(Config.LOGTAG, "created parent directory: " + parent.getAbsolutePath());
+            mXmppConnectionService.restartFileObserver();
         }
         try {
             if (file.createNewFile()) {
@@ -728,7 +714,8 @@ public class FileBackend {
             throws FileCopyException, ImageCompressionException {
         final File parent = file.getParentFile();
         if (parent != null && parent.mkdirs()) {
-            Log.d(Config.LOGTAG, "created parent directory");
+            Log.d(Config.LOGTAG, "created parent directory: " + parent.getAbsolutePath());
+            mXmppConnectionService.restartFileObserver();
         }
         InputStream is = null;
         OutputStream os = null;
@@ -909,18 +896,20 @@ public class FileBackend {
         return new File(attachments, filename);
     }
 
-    public static boolean inConversationsDirectory(final Context context, String path) {
-        final File fileDirectory = new File(path).getParentFile();
-        for (final String type : STORAGE_TYPES) {
-            final File typeDirectory =
-                    new File(
-                            Environment.getExternalStoragePublicDirectory(type),
-                            context.getString(R.string.app_name));
-            if (typeDirectory.equals(fileDirectory)) {
-                return true;
+    public List<Message.StorageLocation> inferStorageLocation(
+            final Collection<Attachment> attachments) {
+        final var filesDir = mXmppConnectionService.getFilesDir();
+        final var attachmentsDir = new File(filesDir, "attachments");
+        final var builder = new ImmutableList.Builder<Message.StorageLocation>();
+        for (final var attachment : attachments) {
+            final var file = getFile(attachment.getUri());
+            if (file.isPresent()) {
+                final var parent = file.get().getParentFile();
+                final var sharedStorage = parent == null || !parent.equals(attachmentsDir);
+                builder.add(new Message.StorageLocation(file.get(), sharedStorage));
             }
         }
-        return false;
+        return builder.build();
     }
 
     public void setupRelativeFilePath(
@@ -1220,7 +1209,7 @@ public class FileBackend {
         final BitmapFactory.Options options = new BitmapFactory.Options();
         try {
             options.inSampleSize = calcSampleSize(context, image, size);
-        } catch (final IOException | SecurityException e) {
+        } catch (final Exception e) {
             Log.d(Config.LOGTAG, "unable to calculate sample size for " + image, e);
             return null;
         }
@@ -1235,7 +1224,7 @@ public class FileBackend {
                 final var bitmap = rotate(originalBitmap, getRotation(context, image));
                 return cropCenterSquare(bitmap, size);
             }
-        } catch (final SecurityException | IOException e) {
+        } catch (final Exception e) {
             Log.d(Config.LOGTAG, "unable to open file " + image, e);
             return null;
         }
@@ -1495,6 +1484,54 @@ public class FileBackend {
             return null;
         }
         return cropCenterSquare(mXmppConnectionService, getAvatarUri(avatar), size);
+    }
+
+    public ListenableFuture<List<Void>> saveInternalToExternal(
+            final Collection<Message.StorageLocation> storageLocations) {
+        final var internalOnly =
+                Collections2.filter(storageLocations, sl -> sl != null && !sl.sharedStorage());
+        final var futures =
+                Collections2.transform(
+                        internalOnly, sl -> saveInternalToExternal(Objects.requireNonNull(sl)));
+        return Futures.successfulAsList(futures);
+    }
+
+    public ListenableFuture<Void> saveInternalToExternal(
+            final Message.StorageLocation storageLocation) {
+        Preconditions.checkArgument(!storageLocation.sharedStorage());
+        final var internal = storageLocation.file();
+        final var external =
+                getSharedStorageLocation(internal.getName(), MimeUtils.getMimeType(internal));
+        if (external.exists() && internal.length() == external.length()) {
+            Log.i(Config.LOGTAG, "file is already available on shared storage");
+            updateMediaScanner(external);
+            return Futures.immediateVoidFuture();
+        }
+        final var parent = external.getParentFile();
+        if (parent != null && parent.mkdirs()) {
+            Log.d(Config.LOGTAG, "created parent directory: " + parent.getAbsolutePath());
+            mXmppConnectionService.restartFileObserver();
+        }
+        return Futures.submit(
+                () -> {
+                    try {
+                        if (external.createNewFile()) {
+                            Log.d(
+                                    Config.LOGTAG,
+                                    "created empty file " + external.getAbsolutePath());
+                        }
+                    } catch (final IOException e) {
+                        throw new IllegalStateException(e);
+                    }
+                    try (final var is = new FileInputStream(internal);
+                            final var os = new FileOutputStream(external)) {
+                        ByteStreams.copy(is, os);
+                    } catch (final IOException e) {
+                        throw new IllegalStateException(e);
+                    }
+                    updateMediaScanner(external);
+                },
+                XmppConnectionService.FILE_ATTACHMENT_EXECUTOR);
     }
 
     public static class Cache {

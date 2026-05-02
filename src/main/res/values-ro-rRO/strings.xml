@@ -862,7 +862,7 @@
     <string name="unable_to_perform_this_action">Nu s-a putut realiza această acțiune</string>
     <string name="open_join_dialog">Alătură-te unui canal public…</string>
     <string name="sharing_application_not_grant_permission">Aplicația care a partajat nu a permis accesul la acest fișier.</string>
-    <string name="group_chats_and_channels"><![CDATA[Discuții de grup & Canale]]></string>
+    <string name="group_chats_and_channels"><![CDATA[Discuții de grup &amp; Canale]]></string>
     <string name="jabber_network">jabber.network</string>
     <string name="local_server">Server local</string>
     <string name="pref_channel_discovery_summary">Cei mai mulți utilizatori ar trebui să aleagă \'jabber.network\' pentru a primi sugestii mai bune din întregul ecosistem XMPP.</string>
@@ -1195,5 +1195,28 @@
     <string name="video_1080p">Foarte mare (1080p)</string>
     <string name="pref_save_to_gallery">Salvează în galerie</string>
     <string name="pref_save_to_gallery_summary">Stocați automat fișierele în dosare publice, astfel încât acestea să apară în galeria și managerul dvs. de fișiere.</string>
+    <plurals name="delete_files_dialog">
+        <item quantity="one">Ștergere fișier</item>
+        <item quantity="few">Ștergere %d fișiere</item>
+        <item quantity="other">Ștergere %d de fișiere</item>
+    </plurals>
+    <plurals name="delete_files_dialog_msg">
+        <item quantity="one">Sigur doriți să ștergeți acest fișier?</item>
+        <item quantity="few">Sigur doriți să ștergeți aceste fișiere?</item>
+        <item quantity="other">Sigur doriți să ștergeți aceste fișiere?</item>
+    </plurals>
+    <plurals name="attachments_saved">
+        <item quantity="one">%d fișier salvat</item>
+        <item quantity="few">%d fișiere salvate</item>
+        <item quantity="other">%d de fișiere salvate</item>
+    </plurals>
+    <string name="could_not_save_files">Nu s-au putut salva fișierele</string>
+    <string name="filter_type_images">Imagini</string>
+    <string name="filter_type_videos">Videoclipuri</string>
+    <string name="filter_type_audio">Fișiere audio</string>
+    <string name="filter_type_documents">Documente</string>
+    <string name="filter_type_other">Altele</string>
+    <string name="filter_media">Filtrare fișiere</string>
+    <string name="apply_filter">Aplică</string>
     <string name="reply_to_message">Răspunde</string>
 </resources>

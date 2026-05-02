@@ -25,7 +25,6 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.IBinder;
 import android.os.Messenger;
 import android.os.PowerManager;
@@ -45,6 +44,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -160,6 +160,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -253,13 +254,7 @@ public class XmppConnectionService extends Service {
     private final QuickConversationsService mQuickConversationsService =
             new QuickConversationsService(this);
     private final ConversationsFileObserver fileObserver =
-            new ConversationsFileObserver(
-                    Environment.getExternalStorageDirectory().getAbsolutePath()) {
-                @Override
-                public void onEvent(final int event, final File file) {
-                    markFileDeleted(file);
-                }
-            };
+            new ConversationsFileObserver(this, this::markFileDeleted);
     private boolean destroyed = false;
 
     private int unreadCount = -1;
@@ -1024,24 +1019,40 @@ public class XmppConnectionService extends Service {
 
     public void expireOldMessages(final boolean resetHasMessagesLeftOnServer) {
         mLastExpiryRun.set(SystemClock.elapsedRealtime());
-        mDatabaseWriterExecutor.execute(
-                () -> {
-                    long timestamp = getAutomaticMessageDeletionDate();
-                    if (timestamp > 0) {
-                        databaseBackend.expireOldMessages(timestamp);
-                        synchronized (XmppConnectionService.this.conversations) {
-                            for (Conversation conversation :
-                                    XmppConnectionService.this.conversations) {
-                                conversation.expireOldMessages(timestamp);
-                                if (resetHasMessagesLeftOnServer) {
-                                    conversation.messagesLoaded.set(true);
-                                    conversation.setHasMessagesLeftOnServer(true);
+        final ListenableFuture<List<DatabaseBackend.FilePathInfo>> filesFuture =
+                Futures.submit(
+                        () -> {
+                            final long timestamp = getAutomaticMessageDeletionDate();
+                            if (timestamp <= 0) {
+                                return Collections.emptyList();
+                            }
+                            final var files = databaseBackend.expireOldMessages(timestamp);
+                            synchronized (this.conversations) {
+                                for (final var conversation : this.conversations) {
+                                    conversation.expireOldMessages(timestamp);
+                                    if (resetHasMessagesLeftOnServer) {
+                                        conversation.messagesLoaded.set(true);
+                                        conversation.setHasMessagesLeftOnServer(true);
+                                    }
                                 }
                             }
-                        }
-                        updateConversationUi();
+                            return files;
+                        },
+                        mDatabaseWriterExecutor);
+        final var future =
+                Futures.transform(filesFuture, this::deleteFiles, FILE_ATTACHMENT_EXECUTOR);
+        Futures.addCallback(
+                future,
+                new FutureCallback<>() {
+                    @Override
+                    public void onSuccess(Integer c) {
+                        Log.d(Config.LOGTAG, "expired old messages including " + c + " files");
                     }
-                });
+
+                    @Override
+                    public void onFailure(Throwable t) {}
+                },
+                MoreExecutors.directExecutor());
     }
 
     @SuppressLint("TrulyRandom")
@@ -1096,7 +1107,7 @@ public class XmppConnectionService extends Service {
         FILE_OBSERVER_EXECUTOR.execute(fileBackend::deleteHistoricAvatarPath);
         if (Compatibility.hasStoragePermission(this)) {
             Log.d(Config.LOGTAG, "starting file observer");
-            FILE_OBSERVER_EXECUTOR.execute(this.fileObserver::startWatching);
+            FILE_OBSERVER_EXECUTOR.execute(this.fileObserver::restartWatching);
             FILE_OBSERVER_EXECUTOR.execute(this::checkForDeletedFiles);
         }
         this.pgpServiceConnection =
@@ -1175,55 +1186,63 @@ public class XmppConnectionService extends Service {
             return;
         }
         final long start = SystemClock.elapsedRealtime();
-        final List<DatabaseBackend.FilePathInfo> relativeFilePaths =
-                databaseBackend.getFilePathInfo();
-        final List<DatabaseBackend.FilePathInfo> changed = new ArrayList<>();
-        for (final DatabaseBackend.FilePathInfo filePath : relativeFilePaths) {
+        final var relativeFilePaths = databaseBackend.getFilePathInfo();
+        final var modifiedBuilder = new ImmutableList.Builder<DatabaseBackend.FilePathInfo>();
+        for (final var filePath : relativeFilePaths) {
             if (destroyed) {
                 Log.d(
                         Config.LOGTAG,
                         "Stop checking for deleted files because service has been destroyed");
                 return;
             }
-            if (filePath.path != null
-                    && !filePath.path.isEmpty()
-                    && filePath.path.charAt(0) == '/') {
+            if (Strings.isNullOrEmpty(filePath.path)) {
+                continue;
+            }
+            if (filePath.path.charAt(0) == '/') {
                 final File file = new File(filePath.path);
                 if (filePath.setDeleted(!file.exists())) {
-                    changed.add(filePath);
+                    modifiedBuilder.add(filePath);
                 }
             }
         }
+        final var modified = modifiedBuilder.build();
         final long duration = SystemClock.elapsedRealtime() - start;
         Log.d(
                 Config.LOGTAG,
                 "found "
-                        + changed.size()
-                        + " changed files on start up. total="
+                        + modified.size()
+                        + " modified files on start up. total="
                         + relativeFilePaths.size()
                         + ". ("
                         + duration
                         + "ms)");
-        if (changed.size() > 0) {
-            databaseBackend.markFilesAsChanged(changed);
-            markChangedFiles(changed);
+        if (!modified.isEmpty()) {
+            databaseBackend.markFilesAsChanged(modified);
+            markChangedFiles(modified);
         }
     }
 
     public void startContactObserver() {
+        try {
+            startContactObserverOrThrow();
+        } catch (final RuntimeException e) {
+            Log.e(Config.LOGTAG, "could not start contact observer", e);
+        }
+    }
+
+    private void startContactObserverOrThrow() {
+        final var observer =
+                new ContentObserver(null) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        super.onChange(selfChange);
+                        if (restoredFromDatabaseLatch.getCount() == 0) {
+                            loadPhoneContacts();
+                        }
+                    }
+                };
         getContentResolver()
-                .registerContentObserver(
-                        ContactsContract.Contacts.CONTENT_URI,
-                        true,
-                        new ContentObserver(null) {
-                            @Override
-                            public void onChange(boolean selfChange) {
-                                super.onChange(selfChange);
-                                if (restoredFromDatabaseLatch.getCount() == 0) {
-                                    loadPhoneContacts();
-                                }
-                            }
-                        });
+                .registerContentObserver(ContactsContract.Contacts.CONTENT_URI, true, observer);
     }
 
     @Override
@@ -1250,10 +1269,14 @@ public class XmppConnectionService extends Service {
         super.onDestroy();
     }
 
+    public void restartFileObserverAndCheckForDeletedFiles() {
+        this.restartFileObserver();
+        FILE_OBSERVER_EXECUTOR.execute(this::checkForDeletedFiles);
+    }
+
     public void restartFileObserver() {
         Log.d(Config.LOGTAG, "restarting file observer");
         FILE_OBSERVER_EXECUTOR.execute(this.fileObserver::restartWatching);
-        FILE_OBSERVER_EXECUTOR.execute(this::checkForDeletedFiles);
     }
 
     public void toggleScreenEventReceiver() {
@@ -1823,7 +1846,8 @@ public class XmppConnectionService extends Service {
                                     Config.LOGTAG,
                                     "deleting messages that are older than "
                                             + AbstractGenerator.getTimestamp(deletionDate));
-                            databaseBackend.expireOldMessages(deletionDate);
+                            final var files = databaseBackend.expireOldMessages(deletionDate);
+                            FILE_ATTACHMENT_EXECUTOR.execute(() -> deleteFiles(files));
                         }
                         Log.d(Config.LOGTAG, "restoring roster...");
                         for (final Account account : accounts) {
@@ -1914,6 +1938,22 @@ public class XmppConnectionService extends Service {
         return this.conversations;
     }
 
+    public ListenableFuture<Void> deleteMediaFiles(final Collection<File> files) {
+        return Futures.submit(
+                () -> {
+                    for (final var file : files) {
+                        synchronized (FILENAMES_TO_IGNORE_DELETION) {
+                            FILENAMES_TO_IGNORE_DELETION.add(file.getAbsolutePath());
+                        }
+                        if (file.delete()) {
+                            markFileDeleted(file);
+                            fileBackend.updateMediaScanner(file);
+                        }
+                    }
+                },
+                FILE_ATTACHMENT_EXECUTOR);
+    }
+
     private void markFileDeleted(final File file) {
         synchronized (FILENAMES_TO_IGNORE_DELETION) {
             if (FILENAMES_TO_IGNORE_DELETION.remove(file.getAbsolutePath())) {
@@ -1921,20 +1961,14 @@ public class XmppConnectionService extends Service {
                 return;
             }
         }
-        final boolean isInternalFile = false; // fileBackend.isInternalFile(file);
-        final List<String> uuids = databaseBackend.markFileAsDeleted(file, isInternalFile);
+        final var uuids = databaseBackend.markFileAsDeleted(file);
         Log.d(
                 Config.LOGTAG,
-                "deleted file "
-                        + file.getAbsolutePath()
-                        + " internal="
-                        + isInternalFile
-                        + ", database hits="
-                        + uuids.size());
+                "deleted file " + file.getAbsolutePath() + ", database hits=" + uuids.size());
         markUuidsAsDeletedFiles(uuids);
     }
 
-    private void markUuidsAsDeletedFiles(List<String> uuids) {
+    private void markUuidsAsDeletedFiles(final List<String> uuids) {
         boolean deleted = false;
         for (Conversation conversation : getConversations()) {
             deleted |= conversation.markAsDeleted(uuids);
@@ -1947,7 +1981,7 @@ public class XmppConnectionService extends Service {
         }
     }
 
-    private void markChangedFiles(List<DatabaseBackend.FilePathInfo> infos) {
+    private void markChangedFiles(final List<DatabaseBackend.FilePathInfo> infos) {
         boolean changed = false;
         for (Conversation conversation : getConversations()) {
             changed |= conversation.markAsChanged(infos);
@@ -3362,6 +3396,7 @@ public class XmppConnectionService extends Service {
         return PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
     }
 
+    // TODO move to AppSettings. Migrate to Optional
     public long getAutomaticMessageDeletionDate() {
         final long timeout =
                 getLongPreference(
@@ -3758,12 +3793,50 @@ public class XmppConnectionService extends Service {
         conversation.clearMessages();
         conversation.setHasMessagesLeftOnServer(false); // avoid messages getting loaded through mam
         conversation.setLastClearHistory(clearDate, reference);
-        Runnable runnable =
-                () -> {
-                    databaseBackend.deleteMessagesInConversation(conversation);
-                    databaseBackend.updateConversation(conversation);
-                };
-        mDatabaseWriterExecutor.execute(runnable);
+        final var filesFuture =
+                Futures.submit(
+                        () -> databaseBackend.deleteMessagesInConversation(conversation),
+                        mDatabaseWriterExecutor);
+        final var numFilesDeleted =
+                Futures.transform(filesFuture, this::deleteFiles, FILE_ATTACHMENT_EXECUTOR);
+        Futures.addCallback(
+                numFilesDeleted,
+                new FutureCallback<>() {
+                    @Override
+                    public void onSuccess(Integer result) {
+                        Log.d(
+                                Config.LOGTAG,
+                                "deleted history for "
+                                        + conversation.getAddress()
+                                        + " with "
+                                        + result
+                                        + " files");
+                    }
+
+                    @Override
+                    public void onFailure(Throwable t) {}
+                },
+                MoreExecutors.directExecutor());
+    }
+
+    private int deleteFiles(final Collection<DatabaseBackend.FilePathInfo> files) {
+        final var count = new AtomicInteger();
+        for (final var fileInfo : java.util.Objects.requireNonNull(files)) {
+            if (Strings.isNullOrEmpty(fileInfo.path) || fileInfo.deleted) {
+                continue;
+            }
+            if (fileInfo.path.charAt(0) == '/') {
+                final var file = new File(fileInfo.path);
+                synchronized (FILENAMES_TO_IGNORE_DELETION) {
+                    FILENAMES_TO_IGNORE_DELETION.add(file.getAbsolutePath());
+                }
+                if (file.delete()) {
+                    final var num = count.getAndIncrement();
+                    Log.d(Config.LOGTAG, "deleted file #" + num + " " + file.getAbsolutePath());
+                }
+            }
+        }
+        return count.get();
     }
 
     public boolean sendBlockRequest(
