@@ -1196,5 +1196,6 @@
     <string name="filter_type_other">Andere</string>
     <string name="filter_media">Medien filtern</string>
     <string name="apply_filter">Anwenden</string>
+    <string name="select_all">Alle auswählen</string>
     <string name="reply_to_message">Antworten</string>
 </resources>

@@ -1203,5 +1203,6 @@
     <string name="filter_type_other">Tjetër</string>
     <string name="filter_media">Filtroni media</string>
     <string name="apply_filter">Aplikoje</string>
+    <string name="select_all">Përzgjidhe krejt</string>
     <string name="reply_to_message">Përgjigjuni</string>
 </resources>
