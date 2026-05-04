@@ -1211,8 +1211,5 @@
     <string name="filter_type_other">Annat</string>
     <string name="filter_media">Filtrera media</string>
     <string name="apply_filter">Tillämpa</string>
-    <string name="pref_save_to_gallery">Spara till galleri</string>
-    <string name="pref_save_to_gallery_summary">Lagra media automatiskt i offentliga mappar så att de visas i ditt galleri och filhanterare.</string>
-    <string name="pref_presence_settings_summary">Borta vid enhetslåsning, Synkronisera system Stör ej</string>
     <string name="reply_to_message">Svara</string>
 </resources>
