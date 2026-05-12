@@ -45,6 +45,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -56,6 +57,7 @@ import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.search.SearchView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.common.base.Strings;
 import com.google.common.collect.Collections2;
@@ -397,11 +399,35 @@ public class ConversationsOverviewFragment extends XmppFragment {
         return null;
     }
 
-    public void onViewCreated(@NonNull final View view, final Bundle savedInstanceState) {
-        if (savedInstanceState == null) {
-            return;
+    @Override
+    public void onViewCreated(
+            @NonNull final View view,
+            @Nullable final Bundle savedInstanceState) {
+
+        super.onViewCreated(view, savedInstanceState);
+
+        if (savedInstanceState != null) {
+            pendingScrollState.push(savedInstanceState.getParcelable(STATE_SCROLL_POSITION));
         }
-        pendingScrollState.push(savedInstanceState.getParcelable(STATE_SCROLL_POSITION));
+
+        requireActivity()
+                .getOnBackPressedDispatcher()
+                .addCallback(
+                        getViewLifecycleOwner(),
+                        new OnBackPressedCallback(true) {
+                            @Override
+                            public void handleOnBackPressed() {
+                                if (isSearchViewOpen()) {
+                                    hideSearchView();
+                                    return;
+                                }
+
+                                setEnabled(false);
+                                requireActivity()
+                                        .getOnBackPressedDispatcher()
+                                        .onBackPressed();
+                            }
+                        });
     }
 
     @Override
@@ -556,6 +582,11 @@ public class ConversationsOverviewFragment extends XmppFragment {
         }
     }
 
+    private boolean isSearchViewOpen() {
+        return binding.searchView.getCurrentTransitionState()
+                != SearchView.TransitionState.HIDDEN;
+    }
+    
     private void hideSearchView() {
         if (ConversationsActivity.isTabletView(requireActivity())) {
             this.binding.searchView.hide();
