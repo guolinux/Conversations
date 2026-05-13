@@ -495,7 +495,22 @@ public class FileBackend {
     }
 
     public boolean deleteFile(Message message) {
-        File file = getFile(message);
+        final File file = getFile(message);
+        final var messagesUuids = mXmppConnectionService.databaseBackend.getMessagesWithFile(file);
+
+        if (messagesUuids.size() > 1) {
+            Log.d(
+                    Config.LOGTAG,
+                    "omitting deletion of file "
+                            + file.getAbsolutePath()
+                            + " because it is referenced by an other message(s) (UUID: "
+                            + messagesUuids
+                            + ").\nfile path for message "
+                            + message.getUuid()
+                            + " will be cleared to prevent recovery in checkForDeletedFiles().");
+            message.setRelativeFilePath(null);
+            return true;
+        }
         if (file.delete()) {
             updateMediaScanner(file);
             return true;
