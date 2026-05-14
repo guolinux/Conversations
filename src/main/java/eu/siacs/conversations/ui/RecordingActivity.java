@@ -12,7 +12,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
-import androidx.databinding.DataBindingUtil;
+import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.common.base.Stopwatch;
 import eu.siacs.conversations.AppSettings;
 import eu.siacs.conversations.Config;
@@ -56,7 +57,7 @@ public class RecordingActivity extends BaseActivity implements View.OnClickListe
         final var appSettings = new AppSettings(this);
         this.autoSendRecording = appSettings.isAutoSendRecording();
         super.onCreate(savedInstanceState);
-        this.binding = DataBindingUtil.setContentView(this, R.layout.activity_recording);
+        this.binding = ActivityRecordingBinding.inflate(getLayoutInflater());
         this.binding.timer.setOnClickListener(
                 v -> {
                     onPauseContinue();
@@ -70,6 +71,19 @@ public class RecordingActivity extends BaseActivity implements View.OnClickListe
             this.binding.shareButton.setIconResource(R.drawable.ic_check_24dp);
         }
         this.binding.shareButton.setOnClickListener(this);
+
+        AlertDialog dialog =
+                new MaterialAlertDialogBuilder(this)
+                        .setView(this.binding.getRoot())
+                        .setCancelable(false)
+                        .create();
+
+        dialog.setOnDismissListener(d -> {
+            finish();
+        });
+
+        dialog.show();
+
         this.setFinishOnTouchOutside(false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
