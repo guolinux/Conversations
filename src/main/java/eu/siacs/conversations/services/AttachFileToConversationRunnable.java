@@ -18,6 +18,8 @@ import eu.siacs.conversations.persistance.DatabaseBackend;
 import eu.siacs.conversations.persistance.FileBackend;
 import eu.siacs.conversations.utils.MimeUtils;
 import eu.siacs.conversations.utils.TranscoderStrategies;
+import eu.siacs.conversations.utils.VideoStrategyHdrWrapper;
+
 import java.io.FileNotFoundException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -115,7 +117,7 @@ public class AttachFileToConversationRunnable implements Runnable, TranscoderLis
             transcoderFuture =
                     Transcoder.into(file.getAbsolutePath())
                             .addDataSource(mXmppConnectionService, uri)
-                            .setVideoTrackStrategy(selectedVideoTranscoderStrategy)
+                            .setVideoTrackStrategy(VideoStrategyHdrWrapper.maybeWrap(selectedVideoTranscoderStrategy))
                             .setAudioTrackStrategy(derivedAudioTranscoderStrategy)
                             .setListener(this)
                             .transcode();
