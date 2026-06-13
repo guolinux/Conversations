@@ -81,7 +81,6 @@
 \n
 \n<b>Προσοχή:</b> Αυτή η ενέργεια δεν θα επηρεάσει μηνύματα που είναι αποθηκευμένα σε άλλες συσκευές ή εξυπηρετητές.</string>
     <string name="delete_file_dialog">Διαγραφή αρχείου</string>
-    <string name="delete_file_dialog_msg">Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το αρχείο;\n\n<b>Προειδοποίηση:</b> Αυτό δεν θα διαγράψει τα αντίγραφα αυτού του αρχείου που είναι αποθηκευμένα σε άλλες συσκευές ή διακομιστές.</string>
     <string name="choose_presence">Επιλογή συσκευής</string>
     <string name="send_unencrypted_message">Αποστολή μη κρυπτογραφημένου μηνύματος</string>
     <string name="send_message">Αποστολή μηνύματος</string>
@@ -407,10 +406,7 @@
         <item quantity="one">%d πιστοποιητικό διαγράφηκε</item>
         <item quantity="other">%d πιστοποιητικά διαγράφηκαν</item>
     </plurals>
-    <string name="pref_quick_action_summary">Αντικατάσταση του κουμπιού \"Αποστολή\" με γρήγορη ενέργεια</string>
     <string name="pref_quick_action">Γρήγορη Ενέργεια</string>
-    <string name="none">Κανένα</string>
-    <string name="recently_used">Πιο πρόσφατα χρησιμοποιημένη</string>
     <string name="choose_quick_action">Επιλογή γρήγορης ενέργειας</string>
     <string name="search_contacts">Αναζήτηση επαφών</string>
     <string name="send_private_message">Αποστολή ιδιωτικού μηνύματος</string>

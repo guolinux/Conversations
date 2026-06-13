@@ -82,9 +82,6 @@
 \n
 \n<b>Упозорење:</b> Ово неће утицати на поруке смештене на осталим уређајима или серверима.</string>
     <string name="delete_file_dialog">Обриши фајл</string>
-    <string name="delete_file_dialog_msg">Да ли си сигуран/на да желиш да обришеш овај фајл?
-\n
-\n<b>Упозорење:</b> Ово неће утицати на копије овог фајла смештене на осталим уређајима или серверима. </string>
     <string name="choose_presence">Изабери уређај</string>
     <string name="send_unencrypted_message">Пошаљи нешифровану поруку</string>
     <string name="send_message">Пошаљи поруку</string>
@@ -419,10 +416,7 @@
         <item quantity="few">%d сертификата обрисана</item>
         <item quantity="other">%d сертификата обрисано</item>
     </plurals>
-    <string name="pref_quick_action_summary">Замени дугме за слање брзом радњом</string>
     <string name="pref_quick_action">Брза радња</string>
-    <string name="none">Ниједна</string>
-    <string name="recently_used">Недавно коришћена</string>
     <string name="choose_quick_action">Изаберите брзу радњу</string>
     <string name="search_contacts">Претражи контакте</string>
     <string name="send_private_message">Пошаљи приватну поруку</string>
@@ -1237,4 +1231,11 @@
     <string name="attachment_choice_video">Видео</string>
     <string name="attachment_choice_recording">Снимак</string>
     <string name="start_group_chat">Покрени групну преписку</string>
+    <string name="delete_file_dialog_shared">Овај фајл је подељен са другим препискама.</string>
+    <string name="delete_file_dialog_confirm">Да ли си сигуран/на да желиш да обришеш овај фајл?</string>
+    <string name="delete_file_dialog_copies">Ово неће обрисати копије овог фајла које су сачуване на другим уређајима или серверима.</string>
+    <string name="sheet_music">ноте</string>
+    <string name="attachment_choice_contact">Контакт</string>
+    <string name="note_to_self">Белешка за себе</string>
+    <string name="invalid_contact">Није могуће ишчитати контакт</string>
 </resources>

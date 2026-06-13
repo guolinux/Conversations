@@ -79,9 +79,6 @@
     <string name="clear_conversation_history">Ryd chat historik</string>
     <string name="clear_histor_msg">Vil du slette alle beskeder i denne chat? \n \n<b>Advarsel:</b> Dette vil ikke påvirke beskeder gemt på andre enheder eller servere.</string>
     <string name="delete_file_dialog">Slet fil</string>
-    <string name="delete_file_dialog_msg">Er du sikker på, at du vil slette denne fil\?
-\n
-\n<b>Advarsel:</b> Dette sletter ikke kopier af denne fil, der er gemt på andre enheder eller servere. </string>
     <string name="choose_presence">Vælg enhed</string>
     <string name="send_unencrypted_message">Send ukrypteret besked</string>
     <string name="send_message">Send besked</string>
@@ -412,10 +409,7 @@
         <item quantity="one">%d certifikat slettet</item>
         <item quantity="other">%d certifikater slettet</item>
     </plurals>
-    <string name="pref_quick_action_summary">Erstat \"Send\" knap med hurtig handling</string>
     <string name="pref_quick_action">Hurtig handling</string>
-    <string name="none">Ingen</string>
-    <string name="recently_used">Senest brugt</string>
     <string name="choose_quick_action">Vælg hurtig handling</string>
     <string name="search_contacts">Find kontakter</string>
     <string name="send_private_message">Send privat besked</string>

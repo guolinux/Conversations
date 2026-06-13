@@ -82,9 +82,6 @@
 \n
 \n<b>Varování</b>Toto neovlivní zprávy uložené na jiných zařízeních či serverech.</string>
     <string name="delete_file_dialog">Smazat soubor</string>
-    <string name="delete_file_dialog_msg">Opravdu chcete smazat tento soubor\?
-\n
-\n<b>Varování</b>Toto neovlivní kopie uložené na jiných zařízeních či serverech. </string>
     <string name="choose_presence">Vybrat přístroj</string>
     <string name="send_unencrypted_message">Odeslat nešifrovanou zprávu</string>
     <string name="send_message">Odeslat zprávu</string>
@@ -410,10 +407,7 @@
         <item quantity="many">%d certifikátů smazáno</item>
         <item quantity="other">%d certifikátů smazáno</item>
     </plurals>
-    <string name="pref_quick_action_summary">Nahradit tlačítko odeslání rychlou akcí</string>
     <string name="pref_quick_action">Rychlá akce</string>
-    <string name="none">Žádná</string>
-    <string name="recently_used">Naposledy použitá</string>
     <string name="choose_quick_action">Vybrat rychlou akci</string>
     <string name="search_contacts">Prohledat kontakty</string>
     <string name="send_private_message">Poslat soukromou zprávu</string>

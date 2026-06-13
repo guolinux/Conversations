@@ -19,7 +19,7 @@
     <bool name="use_green_background">true</bool>
     <bool name="large_font">false</bool>
     <bool name="show_avatars">true</bool>
-    <string name="quick_action">RECORD_VOICE</string>
+    <string name="quick_action">RECORDING</string>
     <bool name="show_dynamic_tags">false</bool>
     <bool name="dynamic_colors">false</bool>
     <bool name="btbv">true</bool>
@@ -38,7 +38,6 @@
     <bool name="validate_hostname">false</bool>
     <bool name="scroll_to_bottom">true</bool>
     <string name="omemo_setting_default">default_on</string>
-    <bool name="use_share_location_plugin">false</bool>
     <bool name="start_searching">false</bool>
     <string name="video_compression">480</string>
     <string name="default_channel_discovery">JABBER_NETWORK</string>

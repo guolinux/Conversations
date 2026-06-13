@@ -82,9 +82,6 @@
 \n
 \n <b>Avertissement :</b> Cela ne supprimera pas les copies des messages qui sont stockés sur d\'autres appareils ou serveurs.</string>
     <string name="delete_file_dialog">Supprimer le fichier</string>
-    <string name="delete_file_dialog_msg">Êtes-vous sûr de vouloir supprimer ce fichier \?
-\n
-\n<b>Avertissement :</b> Cela ne supprimera pas les copies de ce fichier qui sont stockées sur d\'autres appareils ou serveurs. </string>
     <string name="choose_presence">Choisir l\'appareil</string>
     <string name="send_unencrypted_message">Envoyer un message non-chiffré</string>
     <string name="send_message">Envoyer le message</string>
@@ -414,10 +411,7 @@
         <item quantity="many">%d certificats supprimés</item>
         <item quantity="other">%d certificats supprimés</item>
     </plurals>
-    <string name="pref_quick_action_summary">Remplacer le bouton « Envoyer » par une action rapide</string>
     <string name="pref_quick_action">Action Rapide</string>
-    <string name="none">Aucune</string>
-    <string name="recently_used">Dernière utilisée</string>
     <string name="choose_quick_action">Sélectionner l\'action rapide</string>
     <string name="search_contacts"> Rechercher dans les contacts</string>
     <string name="send_private_message">Envoyer un message privé</string>

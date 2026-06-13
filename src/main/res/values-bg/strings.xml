@@ -81,7 +81,6 @@
 \n
 \n<b>Внимание:</b> Това няма да изтрие съобщенията, които се съхраняват на други устройства или сървъри.</string>
     <string name="delete_file_dialog">Изтриване на файла</string>
-    <string name="delete_file_dialog_msg">Наистина ли искате да изтриете този файл?\n\n<b>Внимание:</b> Това няма да изтрие копията на файла, които се съхраняват на други устройства или сървъри.</string>
     <string name="choose_presence">Изберете устройство</string>
     <string name="send_unencrypted_message">Изпр. на нешифр. съобщение</string>
     <string name="send_message">Изпращане на съобщение</string>
@@ -406,10 +405,7 @@
         <item quantity="one">%d сертификат е изтрит</item>
         <item quantity="other">%d сертификата са изтрити</item>
     </plurals>
-    <string name="pref_quick_action_summary">Замяна на бутона „Изпращане“ с бързо действие</string>
     <string name="pref_quick_action">Бързо действие</string>
-    <string name="none">Нищо</string>
-    <string name="recently_used">Използвани наскоро</string>
     <string name="choose_quick_action">Изберете бързо действие</string>
     <string name="search_contacts">Търсене в контактите</string>
     <string name="send_private_message">Изпращане на лично съобщение</string>

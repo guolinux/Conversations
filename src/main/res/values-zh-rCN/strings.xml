@@ -78,7 +78,6 @@
     <string name="clear_conversation_history">清除聊天记录</string>
     <string name="clear_histor_msg">要删除此对话中的所有消息吗？\n\n<b>警告：</b>此操作不会影响存储在其他设备或服务器上的消息。</string>
     <string name="delete_file_dialog">删除文件</string>
-    <string name="delete_file_dialog_msg">您确定要删除此文件吗？\n\n<b>警告：</b>此操作不会删除存储在其他设备或服务器上此文件的副本。</string>
     <string name="choose_presence">选择设备</string>
     <string name="send_unencrypted_message">发送未加密消息</string>
     <string name="send_message">发送消息</string>
@@ -410,10 +409,7 @@
     <plurals name="toast_delete_certificates">
         <item quantity="other">%d 个证书已删除</item>
     </plurals>
-    <string name="pref_quick_action_summary">将“发送”按钮替换为快捷操作</string>
     <string name="pref_quick_action">快捷操作</string>
-    <string name="none">无</string>
-    <string name="recently_used">最近用过</string>
     <string name="choose_quick_action">选择快捷操作</string>
     <string name="search_contacts">搜索联系人</string>
     <string name="send_private_message">发送私信</string>
@@ -1171,4 +1167,11 @@
     <string name="attachment_choice_video">视频</string>
     <string name="attachment_choice_recording">录音</string>
     <string name="start_group_chat">开始群聊</string>
+    <string name="delete_file_dialog_shared">此文件已与其他对话共享。</string>
+    <string name="delete_file_dialog_confirm">您确定要删除此文件吗？</string>
+    <string name="delete_file_dialog_copies">此操作不会删除存储在其他设备或服务器上的该文件副本。</string>
+    <string name="sheet_music">乐谱</string>
+    <string name="attachment_choice_contact">联系人</string>
+    <string name="note_to_self">自我备注</string>
+    <string name="invalid_contact">无法解析联系人</string>
 </resources>

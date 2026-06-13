@@ -208,7 +208,7 @@ public class XmppConnectionService extends Service {
             new SerialSingleThreadExecutor("VideoCompression");
     private final SerialSingleThreadExecutor mDatabaseWriterExecutor =
             new SerialSingleThreadExecutor("DatabaseWriter");
-    private final SerialSingleThreadExecutor mDatabaseReaderExecutor =
+    public static final SerialSingleThreadExecutor DATABASE_READER =
             new SerialSingleThreadExecutor("DatabaseReader");
     private final SerialSingleThreadExecutor mNotificationExecutor =
             new SerialSingleThreadExecutor("NotificationExecutor");
@@ -1504,12 +1504,21 @@ public class XmppConnectionService extends Service {
             return;
         }
         final var file = fileBackend.getFile(message, false);
-        final var candidates = getExistingUrlsForPath(account.getUuid(), file.getAbsolutePath());
-        final var availableCandidates =
-                Futures.transformAsync(
-                        candidates,
-                        urls -> mHttpConnectionManager.checkAvailability(account, urls),
-                        MoreExecutors.directExecutor());
+        final var encryption = message.getEncryption();
+        final ListenableFuture<Set<String>> availableCandidates;
+        if (encryption == Message.ENCRYPTION_AXOLOTL || encryption == Message.ENCRYPTION_NONE) {
+            final var candidates =
+                    getExistingUrlsForPath(account.getUuid(), file.getAbsolutePath(), encryption);
+            availableCandidates =
+                    Futures.transformAsync(
+                            candidates,
+                            urls -> mHttpConnectionManager.checkAvailability(account, urls),
+                            MoreExecutors.directExecutor());
+        } else {
+            // PGP files are encrypted per recipient
+            availableCandidates = Futures.immediateFuture(Collections.emptySet());
+        }
+
         Futures.addCallback(
                 availableCandidates,
                 new FutureCallback<>() {
@@ -1557,10 +1566,10 @@ public class XmppConnectionService extends Service {
     }
 
     private ListenableFuture<Set<String>> getExistingUrlsForPath(
-            final String account, final String path) {
+            final String account, final String path, final int encryption) {
         return Futures.submit(
-                () -> databaseBackend.getExistingUrlsForPath(account, path),
-                mDatabaseReaderExecutor);
+                () -> databaseBackend.getExistingUrlsForPath(account, path, encryption),
+                DATABASE_READER);
     }
 
     public ListenableFuture<Void> encryptIfNeededAndSend(final Message message) {
@@ -1882,7 +1891,7 @@ public class XmppConnectionService extends Service {
                                 "finished restoring messages in " + diffMessageRestore + "ms");
                         updateConversationUi();
                     };
-            mDatabaseReaderExecutor.execute(
+            DATABASE_READER.execute(
                     runnable); // will contain one write command (expiry) but that's fine
         }
     }
@@ -2092,7 +2101,7 @@ public class XmppConnectionService extends Service {
                         }
                     }
                 };
-        mDatabaseReaderExecutor.execute(runnable);
+        DATABASE_READER.execute(runnable);
     }
 
     public List<Account> getAccounts() {
@@ -2189,7 +2198,7 @@ public class XmppConnectionService extends Service {
                 loadMessagesFromDb = false;
             }
             if (async) {
-                mDatabaseReaderExecutor.execute(
+                DATABASE_READER.execute(
                         () ->
                                 postProcessConversation(
                                         conversation, loadMessagesFromDb, joinAfterCreate, query));
@@ -2221,7 +2230,7 @@ public class XmppConnectionService extends Service {
         }
         existing.setAccount(account);
         final var loadMessagesFromDb = restoreFromArchive(existing);
-        mDatabaseReaderExecutor.execute(
+        DATABASE_READER.execute(
                 () ->
                         postProcessConversation(
                                 existing,

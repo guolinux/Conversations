@@ -81,9 +81,6 @@
 \n
 \n<b>Achtung:</b> Dies beeinflusst nicht Nachrichten, die auf anderen Geräten oder Servern gespeichert sind.</string>
     <string name="delete_file_dialog">Datei löschen</string>
-    <string name="delete_file_dialog_msg">Bist du sicher, dass du diese Datei löschen möchtest\?
-\n
-\n<b>Achtung:</b> Dies löscht keine Kopien dieser Datei, die auf anderen Geräten oder Servern gespeichert sind. </string>
     <string name="choose_presence">Gerät auswählen</string>
     <string name="send_unencrypted_message">Unverschlüsselt schreiben…</string>
     <string name="send_message">Nachricht senden</string>
@@ -416,10 +413,7 @@
         <item quantity="one">%d Zertifikat gelöscht</item>
         <item quantity="other">%d Zertifikate gelöscht</item>
     </plurals>
-    <string name="pref_quick_action_summary">\"Senden\"-Schaltfläche durch Schnell-Tasten ersetzen</string>
     <string name="pref_quick_action">Schnell-Tasten</string>
-    <string name="none">Keine</string>
-    <string name="recently_used">Zuletzt verwendet</string>
     <string name="choose_quick_action">Schnell-Taste auswählen</string>
     <string name="search_contacts">Kontakte durchsuchen</string>
     <string name="send_private_message">Private Nachricht senden</string>
@@ -1153,7 +1147,7 @@
     <string name="its_time_for_contact">Es ist ^1 für ^2</string>
     <string name="pref_entity_time_summary">Teile deine aktuelle Uhrzeit mit deinen Kontakten, um im Gegenzug ihre Ortszeit zu erfahren.</string>
     <string name="pref_entity_time">Ortszeit teilen</string>
-    <string name="contact_has_paused_their_notifications">%s hat seine Benachrichtigungen pausiert</string>
+    <string name="contact_has_paused_their_notifications">%s hat die Benachrichtigungen pausiert</string>
     <string name="pref_sync_system_dnd_summary">Deinen Status automatisch auf „Nicht stören“ setzen, wenn der „Bitte nicht stören“-Modus von Android aktiv ist.</string>
     <string name="pref_sync_system_dnd">Synchronisieren des „Bitte nicht stören“-Modus</string>
     <string name="pref_include_silent_modes">Lautlos-Modus einbeziehen</string>
@@ -1198,4 +1192,11 @@
     <string name="attachment_choice_video">Video</string>
     <string name="attachment_choice_recording">Sprachnachricht</string>
     <string name="start_group_chat">Gruppenchat starten</string>
+    <string name="attachment_choice_contact">Kontakt</string>
+    <string name="note_to_self">Notiz für mich selbst</string>
+    <string name="invalid_contact">Kontakt konnte nicht verarbeitet werden</string>
+    <string name="sheet_music">Noten</string>
+    <string name="delete_file_dialog_copies">Dadurch werden keine Kopien dieser Datei gelöscht, die auf anderen Geräten oder Servern gespeichert sind.</string>
+    <string name="delete_file_dialog_confirm">Möchtest du diese Datei wirklich löschen?</string>
+    <string name="delete_file_dialog_shared">Diese Datei wurde in anderen Chats geteilt.</string>
 </resources>

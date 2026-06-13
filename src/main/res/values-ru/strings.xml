@@ -83,9 +83,6 @@
 \n 
 \n<b>Внимание:</b> данная операция не повлияет на сообщения, хранящиеся на других устройствах или серверах.</string>
     <string name="delete_file_dialog">Удалить файл</string>
-    <string name="delete_file_dialog_msg">Удалить этот файл? 
-\n 
-\n<b>Предупреждение:</b> данная операция не удалит копии файла, хранящиеся на других устройствах или серверах. </string>
     <string name="choose_presence">Выберите устройство</string>
     <string name="send_unencrypted_message">Отправить незашифрованное сообщение</string>
     <string name="send_message">Сообщение</string>
@@ -429,10 +426,7 @@
         <item quantity="many">Удалено %d сертификатов</item>
         <item quantity="other">Удалено %d сертификатов</item>
     </plurals>
-    <string name="pref_quick_action_summary">Заменить кнопку \"Отправить\" кнопкой быстрого действия</string>
     <string name="pref_quick_action">Быстрое действие</string>
-    <string name="none">Нет</string>
-    <string name="recently_used">Последнее выбранное</string>
     <string name="choose_quick_action">Выбрать быстрое действие</string>
     <string name="search_contacts">Поиск контактов</string>
     <string name="send_private_message">Отправить личное сообщение</string>
@@ -1248,4 +1242,18 @@
     <string name="select_all">Выбрать все</string>
     <string name="search_in_chats">Поиск в беседах</string>
     <string name="search_for_x_in_chats">Поиск \"%s\" в беседах</string>
+    <string name="start_group_chat">Начать конференцию</string>
+    <string name="delete_file_dialog_shared">Этот файл был опубликован в других беседах.</string>
+    <string name="delete_file_dialog_confirm">Удалить этот файл?</string>
+    <string name="delete_file_dialog_copies">Это действие не удалит копии данного файла, которые хранятся на других устройствах или серверах.</string>
+    <string name="sheet_music">ноты</string>
+    <string name="attachment_choice_gallery">Галерея</string>
+    <string name="attachment_choice_file">Файл</string>
+    <string name="attachment_choice_location">Местоположение</string>
+    <string name="attachment_choice_camera">Камера</string>
+    <string name="attachment_choice_video">Видео</string>
+    <string name="attachment_choice_recording">Аудиозапись</string>
+    <string name="attachment_choice_contact">Контакт</string>
+    <string name="note_to_self">Заметка себе</string>
+    <string name="invalid_contact">Невозможно разобрать контакт</string>
 </resources>

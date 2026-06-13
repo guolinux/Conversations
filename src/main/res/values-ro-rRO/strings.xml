@@ -82,9 +82,6 @@
 \n
 \n<b>Atenție:</b> Această acțiune nu va afecta mesajele aflate pe alte dispozitive sau servere.</string>
     <string name="delete_file_dialog">Șterge fișierul</string>
-    <string name="delete_file_dialog_msg">Sigur doriți să ștergeți acest fișier\?
-\n
-\n<b>Atenție:</b> Această acțiune nu va șterge copiile acestui fișier care sunt stocate pe alte dispozitive sau servere. </string>
     <string name="choose_presence">Alege dispozitiv</string>
     <string name="send_unencrypted_message">Trimite mesaj necriptat</string>
     <string name="send_message">Trimite mesaj</string>
@@ -418,10 +415,7 @@
         <item quantity="few">%d certificate sterse</item>
         <item quantity="other">%d certificate șterse</item>
     </plurals>
-    <string name="pref_quick_action_summary">Înlocuiește butonul de trimitere cu o acțiune rapidă</string>
     <string name="pref_quick_action">Acțiune rapidă</string>
-    <string name="none">Nimic</string>
-    <string name="recently_used">Folosită recent</string>
     <string name="choose_quick_action">Alegeți acțiunea rapidă</string>
     <string name="search_contacts">Caută contacte</string>
     <string name="send_private_message">Trimite mesaj privat</string>
@@ -1220,4 +1214,11 @@
     <string name="attachment_choice_video">Video</string>
     <string name="attachment_choice_recording">Înregistrare voce</string>
     <string name="start_group_chat">Discuție de grup</string>
+    <string name="delete_file_dialog_shared">Acest fișier a fost partajat în alte discuții.</string>
+    <string name="delete_file_dialog_confirm">Sigur doriți să ștergeți acest fișier?</string>
+    <string name="delete_file_dialog_copies">Nu se vor șterge copiile acestui fișier care sunt stocate pe alte dispozitive sau servere.</string>
+    <string name="sheet_music">partitură muzicală</string>
+    <string name="attachment_choice_contact">Contact</string>
+    <string name="note_to_self">Notă pentru sine</string>
+    <string name="invalid_contact">Nu s-a putut citii contactul</string>
 </resources>

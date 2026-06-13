@@ -78,9 +78,6 @@
     <string name="clear_conversation_history">Esborra l\'historial del xat</string>
     <string name="clear_histor_msg">Vols suprimir tots els missatges d\'aquest xat?\n\n<b>Avís:</b> Això no afectarà els missatges emmagatzemats en altres dispositius o servidors.</string>
     <string name="delete_file_dialog">Eliminar fitxer</string>
-    <string name="delete_file_dialog_msg">Estàs segur que vols esborrar aquest fitxer\?
-\n
-\n<b>Advertiment:</b> Això no eliminarà les còpies d\'aquest fitxer que estiguin emmagatzemades en altres dispositius o servidors. </string>
     <string name="choose_presence">Tria el dispositiu</string>
     <string name="send_unencrypted_message">Envia un missatge de text clar</string>
     <string name="send_message">Envia un missatge</string>
@@ -404,10 +401,7 @@
         <item quantity="many">%d certificats esborrats</item>
         <item quantity="other">%d certificats esborrats</item>
     </plurals>
-    <string name="pref_quick_action_summary">Substituir el botó \"Enviar\" per una acció ràpida</string>
     <string name="pref_quick_action">Acció ràpida</string>
-    <string name="none">Cap</string>
-    <string name="recently_used">Ús més recent</string>
     <string name="choose_quick_action">Trieu una acció ràpida</string>
     <string name="search_contacts">Buscar contactes</string>
     <string name="send_private_message">Envia un missatge privat</string>

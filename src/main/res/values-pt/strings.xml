@@ -287,8 +287,6 @@
         <item quantity="other">%d certificados apagados</item>
     </plurals>
     <string name="pref_quick_action">Ação rápida</string>
-    <string name="none">Nenhum</string>
-    <string name="recently_used">Usados mais recentemente</string>
     <string name="choose_quick_action">Escolher ação rápida</string>
     <string name="search_contacts">Procurar contactos</string>
     <string name="send_private_message">Enviar mensagem privada</string>
@@ -436,7 +434,6 @@
     <string name="account_status_stream_error">Erro de stream</string>
     <string name="account_status_stream_opening_error">Erro na abertura da stream</string>
     <string name="openpgp_has_been_published">Chave pública OpenPGP publicada.</string>
-    <string name="delete_file_dialog_msg">Tem a certeza que quer apagar este ficheiro?\n\n<b>Aviso:</b> Isto não irá apagar cópias deste ficheiro que estão guardadas noutros dispositivos ou servidores.</string>
     <string name="preparing_image">Preparando para enviar a imagem</string>
     <string name="your_nick_has_been_changed">O seu nickname foi alterado</string>
     <string name="contacts_have_no_pgp_keys">Não foi possível encriptar a sua mensagem porque os contactos não estão a anunciar a sua chave pública.\n\n<small>Por favor peça-lhes para configurarem o OpenPGP.</small></string>
@@ -522,7 +519,6 @@
     <string name="non_anonymous">Fazer endereços XMPP visíveis para todos</string>
     <string name="word_document">documento de Word</string>
     <string name="audiobook">Audiobook</string>
-    <string name="pref_quick_action_summary">Troca o botão \"Enviar\" pela ação rápida</string>
     <string name="search_group_chats">Pesquisar conversas em grupo</string>
     <string name="pref_away_when_screen_off_summary">Mostra como Ausente quando o dispositivo está bloqueado</string>
     <string name="moderated">Tornar o canal moderado</string>
@@ -1205,5 +1201,13 @@
     <string name="attachment_choice_location">Localização</string>
     <string name="attachment_choice_camera">Câmara</string>
     <string name="attachment_choice_video">Vídeo</string>
-    <string name="attachment_choice_recording">Gravação de voz</string>
+    <string name="attachment_choice_recording">Gravação</string>
+    <string name="start_group_chat">Começar conversa de grupo</string>
+    <string name="delete_file_dialog_shared">Este ficheiro foi partilhado com outros chats.</string>
+    <string name="delete_file_dialog_confirm">Tem a certeza que quer apagar este ficheiro?</string>
+    <string name="delete_file_dialog_copies">Isto não irá apagar as cópias deste ficheiro que estão armazenadas em outros dispositivos ou servidores.</string>
+    <string name="sheet_music">partituras musicais</string>
+    <string name="attachment_choice_contact">Contacto</string>
+    <string name="note_to_self">Nota pessoal</string>
+    <string name="invalid_contact">Não foi possível processar o contacto</string>
 </resources>

@@ -82,7 +82,6 @@
 \n
 \n<b>Upozornenie:</b>Nebude to mať vplyv na správy uložené na ostatných zariadeniach alebo serveroch.</string>
     <string name="delete_file_dialog">Zmazať súbor</string>
-    <string name="delete_file_dialog_msg">Ste si istý, že chcete tento súbor zmazať?\n\n<b>Upozornenie:</b>Nevymažú sa kópie súborov, ktoré sú uložené na ostatných zariadeniach alebo serveroch.</string>
     <string name="choose_presence">Zvoliť zariadenie</string>
     <string name="send_unencrypted_message">Poslať nezašifrovanú správu</string>
     <string name="send_message">Poslať správu</string>
@@ -373,8 +372,6 @@
         <item quantity="other">%d certifikátov vymazaných</item>
     </plurals>
     <string name="pref_quick_action">Rýchla akcia</string>
-    <string name="none">Žiadny</string>
-    <string name="recently_used">Naposledy použitý</string>
     <string name="choose_quick_action">Vybrať rýchlu voľbu</string>
     <string name="send_private_message">Poslať súkromnú správu</string>
     <string name="username">Užívateľské meno</string>

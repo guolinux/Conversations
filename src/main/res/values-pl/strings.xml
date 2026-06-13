@@ -83,9 +83,6 @@
 \n
 \n<b>Ostrzeżenie:</b> To nie ma wpływu na wiadomości składowane na innych urządzeniach lub serwerach.</string>
     <string name="delete_file_dialog">Usuń plik</string>
-    <string name="delete_file_dialog_msg">Czy na pewno usunąć ten plik\?
-\n
-\n<b>Uwaga:</b> Działanie nie wpływa na kopie pliku przechowywane na innych urządzeniach lub serwerach. </string>
     <string name="choose_presence">Wybierz urządzenie</string>
     <string name="send_unencrypted_message">Wyślij wiadomość czystym tekstem</string>
     <string name="send_message">Wyślij wiadomość</string>
@@ -420,10 +417,7 @@
         <item quantity="many">Usunięto %d certyfikatów</item>
         <item quantity="other">Usunięto %d certyfikatów</item>
     </plurals>
-    <string name="pref_quick_action_summary">Zastąp przycisk wysyłania szybką akcją</string>
     <string name="pref_quick_action">Szybka akcja</string>
-    <string name="none">Brak</string>
-    <string name="recently_used">Ostatnio używana</string>
     <string name="choose_quick_action">Wybierz szybką akcję</string>
     <string name="search_contacts">Przeszukuj kontakty</string>
     <string name="send_private_message">Wyślij wiadomość prywatną</string>
@@ -1232,4 +1226,11 @@
     <string name="attachment_choice_video">Wideo</string>
     <string name="attachment_choice_recording">Nagranie</string>
     <string name="start_group_chat">Rozpocznij rozmowę grupową</string>
+    <string name="delete_file_dialog_shared">Ten plik został udostępniony w innych rozmowach.</string>
+    <string name="delete_file_dialog_confirm">Czy na pewno chcesz usunąć ten plik?</string>
+    <string name="delete_file_dialog_copies">To nie spowoduje usunięcia kopii tego pliku przechowywanych na innych urządzeniach lub serwerach.</string>
+    <string name="sheet_music">nuty</string>
+    <string name="attachment_choice_contact">Kontakt</string>
+    <string name="note_to_self">Notatka dla siebie</string>
+    <string name="invalid_contact">Nie udało się przetworzyć kontaktu</string>
 </resources>

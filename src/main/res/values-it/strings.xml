@@ -82,7 +82,6 @@
 \n
 \n<b>Attenzione:</b> ciò non influenzerà i messaggi salvati su altri dispositivi o server.</string>
     <string name="delete_file_dialog">Elimina file</string>
-    <string name="delete_file_dialog_msg">Sei sicuro di voler eliminare questo file?\n\n<b>Attenzione:</b> non verranno eliminate copie di questo file memorizzate in altri dispositivi o server. </string>
     <string name="choose_presence">Scegli un dispositivo</string>
     <string name="send_unencrypted_message">Invia messaggio in chiaro</string>
     <string name="send_message">Invia messaggio</string>
@@ -418,10 +417,7 @@
         <item quantity="many">Cancellati %d certificati</item>
         <item quantity="other">Cancellati %d certificati</item>
     </plurals>
-    <string name="pref_quick_action_summary">Sostituisci il tasto \"Invio\" con un\'azione rapida</string>
     <string name="pref_quick_action">Azione rapida</string>
-    <string name="none">Nessuno</string>
-    <string name="recently_used">Usati recentemente</string>
     <string name="choose_quick_action">Scegli azione rapida</string>
     <string name="search_contacts">Cerca contatti</string>
     <string name="send_private_message">Invia messaggio privato</string>

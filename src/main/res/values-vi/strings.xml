@@ -80,9 +80,6 @@
 \n
 \n<b>Cảnh báo:</b> Việc này sẽ không ảnh hưởng đến các tin nhắn được lưu trữ trên các thiết bị hoặc máy chủ khác.</string>
     <string name="delete_file_dialog">Xoá tệp</string>
-    <string name="delete_file_dialog_msg">Bạn có chắc bạn muốn xoá tệp này không\?
-\n
-\n<b>Cảnh báo:</b> Việc này sẽ không xoá các bản sao được lưu trữ trên các thiết bị hoặc máy chủ khác của tệp này. </string>
     <string name="choose_presence">Chọn thiết bị</string>
     <string name="send_unencrypted_message">Gửi tin nhắn không mã hoá</string>
     <string name="send_message">Gửi tin nhắn</string>
@@ -409,10 +406,7 @@
     <plurals name="toast_delete_certificates">
         <item quantity="other">Đã xoá %d chứng nhận</item>
     </plurals>
-    <string name="pref_quick_action_summary">Thay thế nút \"Gửi\" bằng hành động nhanh</string>
     <string name="pref_quick_action">Thao tác nhanh</string>
-    <string name="none">Không có</string>
-    <string name="recently_used">Dùng gần đây nhất</string>
     <string name="choose_quick_action">Chọn thao tác nhanh</string>
     <string name="search_contacts">Tìm kiếm liên hệ</string>
     <string name="send_private_message">Gửi tin nhắn cá nhân</string>

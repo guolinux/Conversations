@@ -82,9 +82,6 @@
 \n 
 \n<b>Pozōr:</b> To niy wpływo na wiadōmości trzimane na inkszych maszinach abo serwerach.</string>
     <string name="delete_file_dialog">Wymaż zbiōr</string>
-    <string name="delete_file_dialog_msg">Na zicher wymazać tyn zbiōr\?
-\n
-\n<b>Pozōr:</b> To niy wpływo na kopije zbioru trzimane na inkszych maszinach abo serwerach. </string>
     <string name="choose_presence">Ôbier maszina</string>
     <string name="send_unencrypted_message">Wyślij wiadōmość bez szyfrowanio</string>
     <string name="send_message">Wyślij wiadōmość</string>
@@ -428,10 +425,7 @@
         <item quantity="few">Wymazane %d certyfikaty</item>
         <item quantity="other">Wymazane %d certyfikatōw</item>
     </plurals>
-    <string name="pref_quick_action_summary">Zastōmp knefel wysyłanio gibkōm akcyjōm</string>
     <string name="pref_quick_action">Gibko akcyjo</string>
-    <string name="none">Brak</string>
-    <string name="recently_used">Ôstatnio używano</string>
     <string name="choose_quick_action">Ôbier gibko akcyjo</string>
     <string name="search_contacts">Przeszukej kōntakty</string>
     <string name="send_private_message">Wyślij wiadōmość prywatno</string>
