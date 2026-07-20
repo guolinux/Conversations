@@ -280,8 +280,7 @@ public class ConversationFragment extends XmppFragment
                         }
                     });
     private InputSettings inputSettings =
-            new InputSettings(
-                    true, false, false, true, AppSettings.MessageClickAction.DO_NOTHING);
+            new InputSettings(true, false, false, true, AppSettings.MessageClickAction.DO_NOTHING);
     private boolean mShowLastUserInteraction = false;
     public Uri mPendingEditorContent = null;
     protected MessageAdapter messageListAdapter;
@@ -1428,12 +1427,13 @@ public class ConversationFragment extends XmppFragment
         messageListAdapter.setOnContactPictureLongClicked(this);
         binding.messagesView.setAdapter(messageListAdapter);
 
-        binding.messagesView.setOnItemClickListener((parent, view, position, id) -> {
-            final Object item = parent.getItemAtPosition(position);
-            if (item instanceof Message message) {
-                onMessageClicked(message);
-            }
-        });
+        binding.messagesView.setOnItemClickListener(
+                (parent, view, position, id) -> {
+                    final Object item = parent.getItemAtPosition(position);
+                    if (item instanceof Message message) {
+                        onMessageClicked(message);
+                    }
+                });
 
         registerForContextMenu(binding.messagesView);
 

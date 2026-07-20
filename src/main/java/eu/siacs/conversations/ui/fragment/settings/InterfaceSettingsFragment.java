@@ -33,7 +33,11 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         final var themePreference = findPreference(AppSettings.THEME);
         final var dynamicColors = findPreference(AppSettings.DYNAMIC_COLORS);
         final ListPreference quickAction = findPreference(AppSettings.QUICK_ACTION);
-        if (themePreference == null || dynamicColors == null || quickAction == null) {
+        final ListPreference messageClickAction = findPreference(AppSettings.MESSAGE_CLICK_ACTION);
+        if (themePreference == null
+                || dynamicColors == null
+                || quickAction == null
+                || messageClickAction == null) {
             throw new IllegalStateException(
                     "The preference resource file did not contain theme or color preferences");
         }
@@ -62,6 +66,17 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
         }
         quickAction.setEntryValues(quickActionsEntryValues);
         quickAction.setEntries(quickActionEntries);
+
+        final var messageClickActions = AppSettings.MessageClickAction.values();
+        final var messageClickActionEntryValues = new CharSequence[messageClickActions.length];
+        final var messageClickActionEntries = new CharSequence[messageClickActions.length];
+        for (i = 0; i < messageClickActions.length; ++i) {
+            final var action = messageClickActions[i];
+            messageClickActionEntryValues[i] = action.toString();
+            messageClickActionEntries[i] = getString(messageClickActionLabel(action));
+        }
+        messageClickAction.setEntryValues(messageClickActionEntryValues);
+        messageClickAction.setEntries(messageClickActionEntries);
     }
 
     @Override
@@ -87,6 +102,17 @@ public class InterfaceSettingsFragment extends XmppPreferenceFragment {
                 String.format(
                         "%s is not %s",
                         activity.getClass().getName(), SettingsActivity.class.getName()));
+    }
+
+    private static int messageClickActionLabel(final AppSettings.MessageClickAction action) {
+        return switch (action) {
+            case DO_NOTHING -> R.string.message_click_action_none;
+            case ADD_REACTION -> R.string.add_reaction;
+            case SHARE -> R.string.share_with;
+            case COPY -> R.string.copy_to_clipboard;
+            case QUOTE -> R.string.quote;
+            case MODIFY -> R.string.correct_message;
+        };
     }
 
     private static class QuickActionSummaryProvider

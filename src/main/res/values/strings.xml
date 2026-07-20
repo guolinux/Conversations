@@ -701,6 +701,7 @@
     <string name="pref_scroll_to_bottom_summary">Scroll down after sending a message</string>
     <string name="pref_message_click_action">Message tap action</string>
     <string name="choose_message_click_action">Choose message tap action</string>
+    <string name="message_click_action_none">None</string>
     <string name="edit_status_message_title">Edit Status Message</string>
     <string name="edit_status_message">Edit status message</string>
     <string name="disable_encryption">Disable encryption</string>
