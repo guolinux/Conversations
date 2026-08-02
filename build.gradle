@@ -217,6 +217,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // lets debug builds install side-by-side with a release install of the same
+            // flavor instead of conflicting with it (different applicationId => different
+            // signing key is expected and no longer blocks installation)
+            applicationIdSuffix ".debug"
+        }
         release {
             shrinkResources true
             minifyEnabled true
@@ -277,5 +283,25 @@ android {
             }
         }
 
+    }
+}
+
+androidComponents {
+    // the "applicationId" string resource (used e.g. for the restore and notification-channel
+    // preference intents' targetPackage) is a plain resValue set once in defaultConfig/flavors;
+    // it doesn't automatically pick up the debug build type's applicationIdSuffix, so recompute
+    // it here from each debug variant's actual final (merged + suffixed) applicationId
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.resValues.put(
+                variant.makeResValueKey("string", "applicationId"),
+                variant.applicationId.map { id -> new com.android.build.api.variant.ResValue(id, null) }
+        )
+        // give debug builds a distinct launcher label so they're easy to tell apart from a
+        // release install of the same flavor sitting right next to them
+        def baseAppName = variant.flavorName.startsWith("quicksy") ? "Quicksy" : "Conversations"
+        variant.resValues.put(
+                variant.makeResValueKey("string", "app_name"),
+                new com.android.build.api.variant.ResValue("${baseAppName} Debug", null)
+        )
     }
 }
