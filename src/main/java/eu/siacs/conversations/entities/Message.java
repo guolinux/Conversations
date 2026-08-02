@@ -288,7 +288,7 @@ public class Message extends AbstractEntity
                 Reaction.fromString(cursor.getString(cursor.getColumnIndexOrThrow(REACTIONS))));
     }
 
-    protected static StorageLocation storageLocationFromCursor(
+    public static StorageLocation storageLocationFromCursor(
             final Context context, final Cursor cursor) {
         final var filePath = cursor.getString(cursor.getColumnIndexOrThrow(RELATIVE_FILE_PATH));
         final var sharedStorage = cursor.getInt(cursor.getColumnIndexOrThrow(SHARED_STORAGE)) > 0;

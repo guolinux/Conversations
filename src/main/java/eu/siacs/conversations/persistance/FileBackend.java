@@ -819,17 +819,69 @@ public class FileBackend {
     }
 
     public Message.StorageLocation getStorageLocation(final String filename, final String mime) {
-        final var appSettings = new AppSettings(mXmppConnectionService.getApplicationContext());
+        return getStorageLocation(mXmppConnectionService, filename, mime);
+    }
+
+    /**
+     * Context-only variant of {@link #getStorageLocation(String, String)}. Used by code that needs
+     * to compute where a file belongs (private app storage vs shared/gallery storage, driven by the
+     * {@link AppSettings#isUseSharedStorage()} "gallery mode" toggle) without a bound {@link
+     * eu.siacs.conversations.services.XmppConnectionService} instance, e.g. when restoring media
+     * from a backup archive on a Worker.
+     */
+    public static Message.StorageLocation getStorageLocation(
+            final Context context, final String filename, final String mime) {
+        final var appSettings = new AppSettings(context.getApplicationContext());
         if (appSettings.isUseSharedStorage()) {
-            final var file = getSharedStorageLocation(filename, mime);
+            final var file = getSharedStorageLocation(context, filename, mime);
             return new Message.StorageLocation(file, true);
         } else {
-            final var file = getInternalStorageLocation(filename);
+            final var file = getInternalStorageLocation(context, filename);
             return new Message.StorageLocation(file, false);
         }
     }
 
+    /**
+     * Root that {@link #relativizeFilePath} and {@link #resolveFilePath} are relative to. Shared
+     * storage is rooted at the external storage directory, private app storage at the files
+     * directory. Both contain the Android user id, and the latter also the package name, so
+     * dropping the root is what makes a stored path portable between devices, between user profiles
+     * and across an applicationId suffix.
+     */
+    private static File getStorageRoot(final Context context, final boolean sharedStorage) {
+        return sharedStorage ? Environment.getExternalStorageDirectory() : context.getFilesDir();
+    }
+
+    /**
+     * Turns an absolute file into a path relative to its storage root, e.g. {@code
+     * Pictures/Conversations/<uuid>.jpg} or {@code attachments/<uuid>.jpg}. Returns null if the
+     * file does not live under the root implied by {@code sharedStorage}, which should not happen
+     * for rows written by this app but is not worth guessing about.
+     */
+    public static String relativizeFilePath(
+            final Context context, final File file, final boolean sharedStorage) {
+        final var root = getStorageRoot(context, sharedStorage).getAbsolutePath();
+        final var path = file.getAbsolutePath();
+        final var prefix = root.endsWith("/") ? root : root + "/";
+        if (!path.startsWith(prefix)) {
+            Log.w(Config.LOGTAG, "could not relativize " + path + " against " + root);
+            return null;
+        }
+        return path.substring(prefix.length());
+    }
+
+    /** Inverse of {@link #relativizeFilePath}, resolved against this device's roots. */
+    public static File resolveFilePath(
+            final Context context, final String relativePath, final boolean sharedStorage) {
+        return new File(getStorageRoot(context, sharedStorage), relativePath);
+    }
+
     private File getSharedStorageLocation(final String filename, final String mime) {
+        return getSharedStorageLocation(mXmppConnectionService, filename, mime);
+    }
+
+    private static File getSharedStorageLocation(
+            final Context context, final String filename, final String mime) {
         final File parentDirectory;
         if (Strings.isNullOrEmpty(mime)) {
             parentDirectory =
@@ -862,13 +914,16 @@ public class FileBackend {
             parentDirectory =
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         }
-        final File appDirectory =
-                new File(parentDirectory, mXmppConnectionService.getString(R.string.app_name));
+        final File appDirectory = new File(parentDirectory, context.getString(R.string.app_name));
         return new File(appDirectory, filename);
     }
 
     private File getInternalStorageLocation(final String filename) {
-        final var filesDir = mXmppConnectionService.getFilesDir();
+        return getInternalStorageLocation(mXmppConnectionService, filename);
+    }
+
+    private static File getInternalStorageLocation(final Context context, final String filename) {
+        final var filesDir = context.getFilesDir();
         final var attachments = new File(filesDir, "attachments");
         return new File(attachments, filename);
     }

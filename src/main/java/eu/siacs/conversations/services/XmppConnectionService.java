@@ -1057,7 +1057,7 @@ public class XmppConnectionService extends Service {
     public void onCreate() {
         LibIdnXmppStringprep.setup();
         if (Compatibility.twentySix()) {
-            mNotificationService.initializeChannels();
+            NotificationService.initializeChannels(this);
         }
         mChannelDiscoveryService.initializeMuclumbusService();
         mForceDuringOnCreate.set(Compatibility.twentySix());

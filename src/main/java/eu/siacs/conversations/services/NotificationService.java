@@ -152,8 +152,13 @@ public class NotificationService {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    void initializeChannels() {
-        final Context c = mXmppConnectionService;
+    /**
+     * Takes a Context rather than relying on the service instance so that components which never
+     * bind {@link XmppConnectionService} can make sure the channels exist before notifying. Posting
+     * to a channel that was never created is silently dropped, and channels are wiped together with
+     * the app data -- which is exactly the state a backup restore starts from.
+     */
+    public static void initializeChannels(final Context c) {
         final NotificationManager notificationManager =
                 c.getSystemService(NotificationManager.class);
         if (notificationManager == null) {
@@ -236,8 +241,7 @@ public class NotificationService {
         missedCallsChannel.setGroup("calls");
         notificationManager.createNotificationChannel(missedCallsChannel);
 
-        final var messagesChannel =
-                prepareMessagesChannel(mXmppConnectionService, MESSAGES_NOTIFICATION_CHANNEL);
+        final var messagesChannel = prepareMessagesChannel(c, MESSAGES_NOTIFICATION_CHANNEL);
         notificationManager.createNotificationChannel(messagesChannel);
         final NotificationChannel silentMessagesChannel =
                 new NotificationChannel(

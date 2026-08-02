@@ -26,11 +26,13 @@ import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import eu.siacs.conversations.AppSettings;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.databinding.ActivityImportBackupBinding;
@@ -160,10 +162,23 @@ public class ImportBackupActivity extends ActionBarActivity
             desiredPermission = ImmutableList.of(Manifest.permission.READ_EXTERNAL_STORAGE);
         }
         final Set<String> declaredPermission = getDeclaredPermission();
-        if (declaredPermission.containsAll(desiredPermission)) {
-            requestPermissions.launch(desiredPermission.toArray(new String[0]));
-        } else {
+        // Ask for whatever of those is actually declared instead of giving up entirely when one
+        // is missing; on Tiramisu+ none of the READ_MEDIA_* are declared, so the old all-or-
+        // nothing check meant this screen requested nothing at all.
+        final var request = new ImmutableList.Builder<String>();
+        request.addAll(Collections2.filter(desiredPermission, declaredPermission::contains));
+        // A restore is usually the first thing that happens after the app data was wiped, which
+        // also revoked this. Without it every notification we post is dropped, including the one
+        // reporting which attachments could not be restored.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && declaredPermission.contains(Manifest.permission.POST_NOTIFICATIONS)) {
+            request.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        final var permissions = request.build();
+        if (permissions.isEmpty()) {
             Log.d(Config.LOGTAG, "Manifest is lacking some desired permission. not requesting");
+        } else {
+            requestPermissions.launch(permissions.toArray(new String[0]));
         }
     }
 
@@ -274,6 +289,18 @@ public class ImportBackupActivity extends ActionBarActivity
                 getString(
                         R.string.enter_password_to_restore,
                         backupFile.getHeader().getJid().toString()));
+        // media entries live inside the encrypted archive, so whether this backup has any can
+        // only be known from the (plaintext) header at this point; grey the switch out when it
+        // doesn't, both to avoid offering a choice that has no effect and to give the user
+        // feedback about what the backup they picked actually contains
+        final boolean includesMedia = backupFile.getHeader().includesMedia();
+        enterPasswordBinding.saveToGallery.setEnabled(includesMedia);
+        enterPasswordBinding.saveToGallery.setChecked(
+                includesMedia && new AppSettings(this).isUseSharedStorage());
+        enterPasswordBinding.saveToGallerySummary.setText(
+                includesMedia
+                        ? R.string.pref_save_to_gallery_summary
+                        : R.string.backup_does_not_include_media);
         final MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         builder.setView(enterPasswordBinding.getRoot());
         builder.setTitle(R.string.enter_password);
@@ -314,6 +341,12 @@ public class ImportBackupActivity extends ActionBarActivity
             return;
         }
 
+        // only when the switch was actually offered; a media-less backup forces it unchecked and
+        // persisting that would silently clear an existing "Save to Gallery" preference
+        if (enterPasswordBinding.saveToGallery.isEnabled()) {
+            new AppSettings(this)
+                    .setUseSharedStorage(enterPasswordBinding.saveToGallery.isChecked());
+        }
         importBackup(backupFile, password, enterPasswordBinding.includeKeys.isChecked());
         d.dismiss();
     }

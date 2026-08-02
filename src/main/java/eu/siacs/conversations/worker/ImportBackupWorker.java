@@ -20,12 +20,15 @@ import androidx.work.Data;
 import androidx.work.ForegroundInfo;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
+import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CountingInputStream;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+import eu.siacs.conversations.AppSettings;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.Conversations;
 import eu.siacs.conversations.R;
@@ -34,10 +37,14 @@ import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.persistance.DatabaseBackend;
+import eu.siacs.conversations.persistance.FileBackend;
+import eu.siacs.conversations.services.NotificationService;
 import eu.siacs.conversations.services.QuickConversationsService;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.utils.AccountUtils;
 import eu.siacs.conversations.utils.BackupFileHeader;
+import eu.siacs.conversations.utils.Compatibility;
+import eu.siacs.conversations.utils.MimeUtils;
 import eu.siacs.conversations.xmpp.Jid;
 import im.conversations.android.json.Services;
 import java.io.BufferedReader;
@@ -45,17 +52,23 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
+import java.util.zip.ZipInputStream;
 import javax.crypto.BadPaddingException;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.io.CipherInputStream;
@@ -87,11 +100,41 @@ public class ImportBackupWorker extends Worker {
 
     private static final Pattern COLUMN_PATTERN = Pattern.compile("^[a-zA-Z_]+$");
 
+    // media/<message-uuid>/<filename>, filename must not contain a path separator (zip-slip
+    // protection)
+    private static final Pattern MEDIA_ENTRY_PATTERN =
+            Pattern.compile("^" + ExportBackupWorker.MEDIA_ENTRY_PREFIX + "([^/]+)/([^/]+)$");
+
     private static final int NOTIFICATION_ID = 21;
+
+    // deliberately not NOTIFICATION_ID + 2: that is 23, which is what ExportBackupWorker posts its
+    // "backup created" notification to, so restoring right after a backup used to replace it
+    private static final int BACKUP_RESTORED_NOTIFICATION_ID = 25;
+
+    private static final int PENDING_INTENT_FLAGS =
+            s()
+                    ? PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+                    : PendingIntent.FLAG_UPDATE_CURRENT;
 
     private final String password;
     private final Uri uri;
     private final boolean includeOmemo;
+
+    /** why an attachment did not end up as a file this app can use after the restore */
+    private enum Outcome {
+        /** the file was already there and we may not overwrite it, but we can read it */
+        KEPT,
+        /** the file was already there, we may neither overwrite nor read it */
+        UNREADABLE,
+        /** the archive carried it but it could not be written */
+        FAILED,
+        /** not in the archive and not on this device either */
+        MISSING
+    }
+
+    private record RestoreIssue(File file, Outcome outcome) {}
+
+    private final List<RestoreIssue> issues = new ArrayList<>();
 
     public ImportBackupWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
@@ -104,6 +147,14 @@ public class ImportBackupWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
+        // A restore typically runs on a freshly wiped app, where the notification channels do not
+        // exist because nothing has started XmppConnectionService yet -- that service is the only
+        // place that creates them, and ImportBackupActivity never binds it. Posting to a channel
+        // that does not exist is silently dropped, which would lose both the progress and the
+        // result notification.
+        if (Compatibility.twentySix()) {
+            NotificationService.initializeChannels(getApplicationContext());
+        }
         setForegroundAsync(getForegroundInfo());
         final Result result;
         try {
@@ -193,27 +244,46 @@ public class ImportBackupWorker extends Worker {
         final CipherInputStream cipherInputStream =
                 new CipherInputStream(countingInputStream, cipher);
 
-        final GZIPInputStream gzipInputStream = new GZIPInputStream(cipherInputStream);
-        final BufferedReader reader =
-                new BufferedReader(new InputStreamReader(gzipInputStream, StandardCharsets.UTF_8));
-        final JsonReader jsonReader = new JsonReader(reader);
-        if (jsonReader.peek() == JsonToken.BEGIN_ARRAY) {
-            jsonReader.beginArray();
+        if (backupFileHeader.getVersion() < 3) {
+            final GZIPInputStream gzipInputStream = new GZIPInputStream(cipherInputStream);
+            final BufferedReader reader =
+                    new BufferedReader(
+                            new InputStreamReader(gzipInputStream, StandardCharsets.UTF_8));
+            final JsonReader jsonReader = new JsonReader(reader);
+            // version 2 stored absolute paths (or, for very old rows, a bare filename that
+            // getLegacyFileForFilename resolves); both are inserted untouched
+            importJsonRows(
+                    db,
+                    jsonReader,
+                    backupFileHeader.getJid(),
+                    password,
+                    fileSize,
+                    countingInputStream,
+                    false);
         } else {
-            throw new IllegalStateException("Backup file did not begin with array");
-        }
-        db.beginTransaction();
-        while (jsonReader.hasNext()) {
-            if (jsonReader.peek() == JsonToken.BEGIN_OBJECT) {
-                importRow(db, jsonReader, backupFileHeader.getJid(), password);
-            } else if (jsonReader.peek() == JsonToken.END_ARRAY) {
-                jsonReader.endArray();
-                continue;
+            final ZipInputStream zipInputStream = new ZipInputStream(cipherInputStream);
+            final ZipEntry firstEntry = zipInputStream.getNextEntry();
+            if (firstEntry == null
+                    || !ExportBackupWorker.DB_ENTRY_NAME.equals(firstEntry.getName())) {
+                throw new IOException(
+                        "Backup archive did not start with " + ExportBackupWorker.DB_ENTRY_NAME);
             }
-            updateImportBackupNotification(fileSize, countingInputStream.getCount());
+            final BufferedReader reader =
+                    new BufferedReader(
+                            new InputStreamReader(zipInputStream, StandardCharsets.UTF_8));
+            final JsonReader jsonReader = new JsonReader(reader);
+            importJsonRows(
+                    db,
+                    jsonReader,
+                    backupFileHeader.getJid(),
+                    password,
+                    fileSize,
+                    countingInputStream,
+                    true);
+            zipInputStream.closeEntry();
+            importMedia(context, db, zipInputStream, fileSize, countingInputStream);
+            reconcileSharedStorage(db, backupFileHeader.getJid());
         }
-        db.setTransactionSuccessful();
-        db.endTransaction();
         final Jid jid = backupFileHeader.getJid();
         final Cursor countCursor =
                 db.rawQuery(
@@ -232,11 +302,279 @@ public class ImportBackupWorker extends Worker {
         return Result.success();
     }
 
+    private void importJsonRows(
+            final SQLiteDatabase db,
+            final JsonReader jsonReader,
+            final Jid jid,
+            final String password,
+            final long fileSize,
+            final CountingInputStream countingInputStream,
+            final boolean portablePaths)
+            throws IOException {
+        if (jsonReader.peek() == JsonToken.BEGIN_ARRAY) {
+            jsonReader.beginArray();
+        } else {
+            throw new IllegalStateException("Backup file did not begin with array");
+        }
+        db.beginTransaction();
+        while (jsonReader.hasNext()) {
+            if (jsonReader.peek() == JsonToken.BEGIN_OBJECT) {
+                importRow(db, jsonReader, jid, password, portablePaths);
+            } else if (jsonReader.peek() == JsonToken.END_ARRAY) {
+                jsonReader.endArray();
+                continue;
+            }
+            updateImportBackupNotification(fileSize, countingInputStream.getCount());
+        }
+        db.setTransactionSuccessful();
+        db.endTransaction();
+    }
+
+    /**
+     * Version 3 stores attachment paths relative to their storage root. Those must never reach the
+     * messages table as-is: {@link Message#storageLocationFromCursor} reads any non-absolute value
+     * as a legacy bare filename and would resolve it against the pre-scoped-storage layout. A path
+     * is only kept where the user could plausibly have put the file back by hand, i.e. the source
+     * had it in shared storage and we are restoring into shared storage too; otherwise the media
+     * pass is the only thing that may supply one.
+     *
+     * <p>The row is marked deleted up front and cleared again by the media pass (or by {@link
+     * #reconcileSharedStorage}), so an attachment that is not in the archive never renders as a
+     * working one.
+     */
+    private void rewriteStorageLocation(final ContentValues values) {
+        final var relativePath = values.getAsString(Message.RELATIVE_FILE_PATH);
+        if (Strings.isNullOrEmpty(relativePath)) {
+            return;
+        }
+        final var context = getApplicationContext();
+        final var sourceShared = asBoolean(values.get(Message.SHARED_STORAGE));
+        final var targetShared = new AppSettings(context).isUseSharedStorage();
+        if (sourceShared && targetShared) {
+            values.put(
+                    Message.RELATIVE_FILE_PATH,
+                    FileBackend.resolveFilePath(context, relativePath, true).getAbsolutePath());
+        } else {
+            values.putNull(Message.RELATIVE_FILE_PATH);
+        }
+        values.put(Message.DELETED, 1);
+    }
+
+    /**
+     * The exported values are raw cursor strings ("1"/"0") for most columns but real JSON numbers
+     * for the ones we compute during export, so neither {@code getAsBoolean} (which only accepts
+     * "true") nor a plain cast is reliable here.
+     */
+    private static boolean asBoolean(final Object value) {
+        if (value instanceof Number number) {
+            return number.intValue() != 0;
+        }
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        return value != null && "1".equals(value.toString());
+    }
+
+    /**
+     * Clears the deleted flag for attachments that we kept a path for and that turn out to be
+     * present and readable on this device -- typically because the user copied them over by hand.
+     * Restricted to shared storage: private app data is always readable and writable by us, so a
+     * file missing there is genuinely gone.
+     */
+    private void reconcileSharedStorage(final SQLiteDatabase db, final Jid jid) {
+        final var recovered = new ImmutableList.Builder<String>();
+        final var gone = new ImmutableList.Builder<String>();
+        try (final Cursor cursor =
+                db.rawQuery(
+                        "select messages.uuid,messages.relativeFilePath from messages join"
+                            + " conversations on conversations.uuid=messages.conversationUuid join"
+                            + " accounts on conversations.accountUuid=accounts.uuid where"
+                            + " accounts.username=? and accounts.server=? and"
+                            + " messages.relativeFilePath is not null and messages.sharedStorage=1"
+                            + " and messages.deleted=1 and messages.type in (1,2,5)",
+                        new String[] {jid.getLocal(), jid.getDomain().toString()})) {
+            while (cursor.moveToNext()) {
+                final var file = new File(cursor.getString(1));
+                if (file.canRead()) {
+                    // not in the archive, but the file is right there and usable
+                    recovered.add(cursor.getString(0));
+                } else if (file.exists()) {
+                    // there but not ours to read. Same rule as in restoreMediaEntry: do not call
+                    // it deleted, report it so the user can hand ownership back.
+                    recovered.add(cursor.getString(0));
+                    this.issues.add(new RestoreIssue(file, Outcome.UNREADABLE));
+                } else {
+                    gone.add(cursor.getString(0));
+                    this.issues.add(new RestoreIssue(file, Outcome.MISSING));
+                }
+            }
+        }
+        final var recoveredUuids = recovered.build();
+        final var goneUuids = gone.build();
+        if (recoveredUuids.isEmpty() && goneUuids.isEmpty()) {
+            return;
+        }
+        final var found = new ContentValues();
+        found.put(Message.DELETED, 0);
+        // The archive did not carry the file and it is not on this device either, so it is not
+        // coming back. Drop the path so it stops being treated as an attachment at all -- keeping
+        // it would make every future backup report the same file as missing again.
+        final var lost = new ContentValues();
+        lost.putNull(Message.RELATIVE_FILE_PATH);
+        db.beginTransaction();
+        try {
+            for (final String uuid : recoveredUuids) {
+                db.update(Message.TABLENAME, found, Message.UUID + "=?", new String[] {uuid});
+            }
+            for (final String uuid : goneUuids) {
+                db.update(Message.TABLENAME, lost, Message.UUID + "=?", new String[] {uuid});
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        Log.d(
+                Config.LOGTAG,
+                "recovered "
+                        + recoveredUuids.size()
+                        + " attachments from shared storage, gave up on "
+                        + goneUuids.size());
+    }
+
+    /**
+     * Restores media entries from a version-3+ backup archive. Runs after {@link #importJsonRows}
+     * has already committed all DB rows, so every message referenced by a
+     * media/&lt;uuid&gt;/&lt;filename&gt; entry already exists. Each file is written to a fresh
+     * location computed from this (restoring) device's *current* gallery-mode setting (see {@link
+     * FileBackend#getStorageLocation(Context, String, String)}) -- never from wherever the file
+     * happened to live on the source device -- and its row is fixed up in its own small transaction
+     * immediately after, so an interrupted restore leaves only the one in-flight entry
+     * inconsistent, never anything already processed.
+     */
+    private void importMedia(
+            final Context context,
+            final SQLiteDatabase db,
+            final ZipInputStream zipInputStream,
+            final long fileSize,
+            final CountingInputStream countingInputStream)
+            throws IOException {
+        final byte[] buffer = new byte[8192];
+        ZipEntry entry;
+        while ((entry = zipInputStream.getNextEntry()) != null) {
+            try {
+                restoreMediaEntry(context, db, zipInputStream, entry, buffer);
+            } catch (final IOException e) {
+                Log.w(Config.LOGTAG, "could not restore media entry " + entry.getName(), e);
+            } finally {
+                zipInputStream.closeEntry();
+            }
+            updateImportBackupNotification(fileSize, countingInputStream.getCount());
+        }
+    }
+
+    private void restoreMediaEntry(
+            final Context context,
+            final SQLiteDatabase db,
+            final ZipInputStream zipInputStream,
+            final ZipEntry entry,
+            final byte[] buffer)
+            throws IOException {
+        final Matcher matcher = MEDIA_ENTRY_PATTERN.matcher(entry.getName());
+        if (!matcher.matches()) {
+            Log.w(Config.LOGTAG, "skipping unrecognized backup archive entry: " + entry.getName());
+            return;
+        }
+        final String messageUuid = matcher.group(1);
+        final String filename = matcher.group(2);
+        if ("..".equals(filename) || ".".equals(filename) || filename.contains("\\")) {
+            Log.w(Config.LOGTAG, "refusing to restore unsafe media entry: " + entry.getName());
+            return;
+        }
+        final String mime =
+                MimeUtils.guessMimeTypeFromExtension(MimeUtils.extractRelevantExtension(filename));
+        final Message.StorageLocation destination =
+                FileBackend.getStorageLocation(context, filename, mime);
+        final File destinationFile = destination.file();
+        final File parent = destinationFile.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+        // filenames are UUID-derived and restore only ever targets this app's own
+        // Pictures|Movies|.../<app_name> folders, so a name collision between two unrelated
+        // files is not a realistic concern here; if something is already sitting at this exact
+        // path we treat it as this same attachment and (re-)write it rather than skip it, since
+        // on scoped storage only the app that actually performs the write becomes the file's
+        // MediaStore owner. Note this only succeeds when the file does not exist yet or we
+        // already own it: overwriting a file owned by another app fails with EACCES, which is
+        // handled below. A corrupted pre-existing file is not specially handled here; the user
+        // can always delete the account and restore fresh.
+        // not final: try-with-resources can still throw from close() after the copy loop finished,
+        // in which case the file is not reliably on disk and the catch below resets this
+        boolean written = false;
+        try (final OutputStream outputStream = new FileOutputStream(destinationFile)) {
+            int read;
+            while ((read = zipInputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
+            }
+            written = true;
+        } catch (final IOException e) {
+            // Most likely EACCES because a file of that name already exists and belongs to another
+            // app -- on scoped storage we cannot overwrite what we do not own, which is exactly the
+            // codeberg issue #138 situation. Deliberately do NOT bail out here: the row still gets
+            // the intended path recorded below, only flagged as deleted. Leaving relativeFilePath
+            // NULL instead would be unrecoverable -- checkForDeletedFiles() only looks at rows
+            // "where relativeFilePath is not null", and getFile() would fall back to a legacy
+            // pre-scoped-storage path that does not exist. With the path recorded, the app heals
+            // itself on the next service start as soon as the file becomes accessible again.
+            Log.w(
+                    Config.LOGTAG,
+                    "could not write media file " + destinationFile.getAbsolutePath(),
+                    e);
+            written = false;
+        }
+        if (written) {
+            if (destination.sharedStorage()) {
+                mediaScannerScanFile(destinationFile);
+            }
+        } else if (!destinationFile.exists()) {
+            // the archive carried the file but we could not put it anywhere
+            this.issues.add(new RestoreIssue(destinationFile, Outcome.FAILED));
+        } else if (destinationFile.canRead()) {
+            this.issues.add(new RestoreIssue(destinationFile, Outcome.KEPT));
+        } else {
+            this.issues.add(new RestoreIssue(destinationFile, Outcome.UNREADABLE));
+        }
+        final ContentValues values = new ContentValues();
+        values.put(Message.RELATIVE_FILE_PATH, destinationFile.getAbsolutePath());
+        values.put(Message.SHARED_STORAGE, destination.sharedStorage());
+        // Recompute rather than carry over the exported flag, but only treat a file as deleted
+        // when it is genuinely not there. A file that exists yet cannot be read is deliberately
+        // not flagged: checkForDeletedFiles() reconciles on existence alone and would clear the
+        // flag again on the next service start regardless of whether the user fixed anything, so
+        // flagging it would only produce a "File deleted" that later flips to a broken bubble.
+        // The restore notification reports these instead and points at the fix.
+        values.put(Message.DELETED, !written && !destinationFile.exists());
+        db.beginTransaction();
+        try {
+            db.update(Message.TABLENAME, values, Message.UUID + "=?", new String[] {messageUuid});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private void mediaScannerScanFile(final File file) {
+        final Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        intent.setData(Uri.fromFile(file));
+        getApplicationContext().sendBroadcast(intent);
+    }
+
     private void importRow(
             final SQLiteDatabase db,
             final JsonReader jsonReader,
             final Jid account,
-            final String passphrase)
+            final String passphrase,
+            final boolean portablePaths)
             throws IOException {
         jsonReader.beginObject();
         final String firstParameter = jsonReader.nextName();
@@ -297,6 +635,9 @@ public class ImportBackupWorker extends Worker {
             }
             contentValues.put(Account.KEYS, Services.GSON.toJson(importReadyKeys));
         }
+        if (portablePaths && Message.TABLENAME.equals(table)) {
+            rewriteStorageLocation(contentValues);
+        }
         if (this.includeOmemo) {
             db.insert(table, null, contentValues);
         } else {
@@ -342,30 +683,125 @@ public class ImportBackupWorker extends Worker {
         return builder.build();
     }
 
+    private List<RestoreIssue> issues(final Outcome outcome) {
+        return ImmutableList.copyOf(
+                Collections2.filter(this.issues, issue -> issue.outcome() == outcome));
+    }
+
+    private String describe(final Outcome outcome) {
+        final var group = issues(outcome);
+        if (group.isEmpty()) {
+            return null;
+        }
+        final int plural =
+                switch (outcome) {
+                    case UNREADABLE -> R.plurals.restore_unreadable;
+                    case FAILED -> R.plurals.restore_failed;
+                    case KEPT -> R.plurals.restore_kept;
+                    case MISSING -> R.plurals.restore_missing;
+                };
+        return getApplicationContext()
+                .getResources()
+                .getQuantityString(plural, group.size(), group.size());
+    }
+
+    /**
+     * Shares the affected paths grouped by outcome. Only the unreadable ones can be repaired by
+     * handing ownership back to this app, so the grouping is the actionable part.
+     */
+    private PendingIntent shareIssuesIntent(final Context context) {
+        final var text = new StringBuilder();
+        for (final Outcome outcome : Outcome.values()) {
+            final var group = issues(outcome);
+            if (group.isEmpty()) {
+                continue;
+            }
+            if (text.length() > 0) {
+                text.append('\n');
+            }
+            text.append(describe(outcome)).append(":\n");
+            for (final RestoreIssue issue : group) {
+                text.append(issue.file().getAbsolutePath()).append('\n');
+            }
+        }
+        final var intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, text.toString());
+        return PendingIntent.getActivity(
+                context,
+                146,
+                Intent.createChooser(intent, context.getString(R.string.share_skipped_files)),
+                PENDING_INTENT_FLAGS);
+    }
+
     private void notifySuccess() {
         final var context = getApplicationContext();
+        final var restored = context.getString(R.string.notification_restored_backup_subtitle);
+        // most actionable first, same ordering as the notification after a backup: a warning
+        // behind the "backup restored" line is easy to miss entirely
+        final var lines = new ArrayList<String>();
+        // ordered by how much the user can and should do about it
+        for (final Outcome outcome :
+                new Outcome[] {Outcome.UNREADABLE, Outcome.KEPT, Outcome.MISSING, Outcome.FAILED}) {
+            final var line = describe(outcome);
+            if (line != null) {
+                lines.add(line + ".");
+            }
+        }
+
         final var builder = new NotificationCompat.Builder(context, "backup");
         builder.setContentTitle(context.getString(R.string.notification_restored_backup_title))
-                .setContentText(context.getString(R.string.notification_restored_backup_subtitle))
                 .setAutoCancel(true)
                 .setSmallIcon(R.drawable.ic_unarchive_24dp);
+        if (lines.isEmpty()) {
+            builder.setContentText(restored);
+        } else {
+            builder.setContentText(lines.get(0));
+            final var bigText = new StringBuilder(Joiner.on(' ').join(lines));
+            bigText.append("\n\n")
+                    .append(
+                            context.getString(
+                                    R.string.backup_skipped_files_list,
+                                    context.getString(R.string.share_skipped_files)));
+            if (Config.HELP != null) {
+                bigText.append(' ')
+                        .append(
+                                context.getString(
+                                        R.string.backup_skipped_files_help,
+                                        context.getString(R.string.help)));
+            }
+            bigText.append("\n\n").append(restored);
+            builder.setStyle(new NotificationCompat.BigTextStyle().bigText(bigText.toString()));
+            builder.addAction(
+                    R.drawable.ic_share_24dp,
+                    context.getString(R.string.share_skipped_files),
+                    shareIssuesIntent(context));
+            if (Config.HELP != null) {
+                builder.addAction(
+                        R.drawable.ic_help_24dp,
+                        context.getString(R.string.help),
+                        PendingIntent.getActivity(
+                                context,
+                                147,
+                                new Intent(Intent.ACTION_VIEW, Config.HELP),
+                                PENDING_INTENT_FLAGS));
+            }
+        }
         if (QuickConversationsService.isConversations()
                 && AccountUtils.MANAGE_ACCOUNT_ACTIVITY != null) {
-            builder.setContentText(
-                    context.getString(R.string.notification_restored_backup_subtitle));
             builder.setContentIntent(
                     PendingIntent.getActivity(
                             context,
                             145,
                             new Intent(context, AccountUtils.MANAGE_ACCOUNT_ACTIVITY),
-                            s()
-                                    ? PendingIntent.FLAG_IMMUTABLE
-                                            | PendingIntent.FLAG_UPDATE_CURRENT
-                                    : PendingIntent.FLAG_UPDATE_CURRENT));
+                            PENDING_INTENT_FLAGS));
         }
+        Log.d(
+                Config.LOGTAG,
+                "posting restore notification, issues=" + this.issues.size() + " " + lines);
         getApplicationContext()
                 .getSystemService(NotificationManager.class)
-                .notify(NOTIFICATION_ID + 2, builder.build());
+                .notify(BACKUP_RESTORED_NOTIFICATION_ID, builder.build());
     }
 
     public static Data data(final String password, final Uri uri, final boolean includeOmemo) {

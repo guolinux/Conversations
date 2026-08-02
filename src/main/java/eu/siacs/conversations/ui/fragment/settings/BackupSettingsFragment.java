@@ -83,6 +83,15 @@ public class BackupSettingsFragment extends XmppPreferenceFragment {
                         appSettings.getBackupLocationAsPath()));
         backupLocation.setOnPreferenceClickListener(this::onBackupLocationPreferenceClicked);
         createOneOffBackup.setOnPreferenceClickListener(this::onBackupPreferenceClicked);
+        // surface the outcome of the last backup here; a recurring backup deliberately does not
+        // notify on every run, so this is where the user would notice a recurring problem
+        final int skipped = appSettings.getBackupSkippedFiles();
+        if (skipped > 0) {
+            createOneOffBackup.setSummary(
+                    getResources()
+                            .getQuantityString(
+                                    R.plurals.backup_skipped_files_summary, skipped, skipped));
+        }
         setValues(
                 recurringBackup,
                 R.array.recurring_backup_values,
@@ -142,6 +151,7 @@ public class BackupSettingsFragment extends XmppPreferenceFragment {
                                 .setRequiresStorageNotLow(true)
                                 .build();
 
+                final var appSettings = new AppSettings(requireContext());
                 final PeriodicWorkRequest periodicWorkRequest =
                         new PeriodicWorkRequest.Builder(
                                         ExportBackupWorker.class,
@@ -151,6 +161,9 @@ public class BackupSettingsFragment extends XmppPreferenceFragment {
                                 .setInputData(
                                         new Data.Builder()
                                                 .putBoolean("recurring_backup", true)
+                                                .putBoolean(
+                                                        "include_media",
+                                                        appSettings.isBackupIncludeMedia())
                                                 .build())
                                 .build();
                 workManager.enqueueUniquePeriodicWork(
@@ -181,9 +194,15 @@ public class BackupSettingsFragment extends XmppPreferenceFragment {
     }
 
     private void startOneOffBackup() {
+        final var appSettings = new AppSettings(requireContext());
         final OneTimeWorkRequest exportBackupWorkRequest =
                 new OneTimeWorkRequest.Builder(ExportBackupWorker.class)
                         .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                        .setInputData(
+                                new Data.Builder()
+                                        .putBoolean(
+                                                "include_media", appSettings.isBackupIncludeMedia())
+                                        .build())
                         .build();
         WorkManager.getInstance(requireContext())
                 .enqueueUniqueWork(

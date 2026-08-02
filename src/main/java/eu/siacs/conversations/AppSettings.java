@@ -76,6 +76,8 @@ public class AppSettings {
     public static final String VIDEO_COMPRESSION = "video_compression";
     public static final String AUTO_SEND_RECORDING = "auto_send_recording";
     public static final String USE_SHARED_STORAGE = "use_shared_storage";
+    public static final String BACKUP_INCLUDE_MEDIA = "backup_include_media";
+    private static final String BACKUP_SKIPPED_FILES = "backup_skipped_files";
     public static final String QUICK_ACTION = "quick_action_button";
 
     private static final String ACCEPT_INVITES_FROM_STRANGERS = "accept_invites_from_strangers";
@@ -210,6 +212,29 @@ public class AppSettings {
 
     public boolean isUseSharedStorage() {
         return getBooleanPreference(USE_SHARED_STORAGE, R.bool.use_shared_storage);
+    }
+
+    public void setUseSharedStorage(final boolean useSharedStorage) {
+        final SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(context);
+        sharedPreferences.edit().putBoolean(USE_SHARED_STORAGE, useSharedStorage).apply();
+    }
+
+    public boolean isBackupIncludeMedia() {
+        return getBooleanPreference(BACKUP_INCLUDE_MEDIA, R.bool.backup_include_media);
+    }
+
+    /** number of media files the most recent backup was unable to read; 0 when all went well */
+    public int getBackupSkippedFiles() {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getInt(BACKUP_SKIPPED_FILES, 0);
+    }
+
+    public void setBackupSkippedFiles(final int count) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putInt(BACKUP_SKIPPED_FILES, count)
+                .apply();
     }
 
     public boolean isUseTor() {

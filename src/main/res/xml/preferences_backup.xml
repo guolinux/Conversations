@@ -9,6 +9,13 @@
             android:key="recurring_backup"
             android:title="@string/pref_backup_recurring" />
 
+        <SwitchPreferenceCompat
+            android:defaultValue="@bool/backup_include_media"
+            android:icon="@drawable/ic_photo_24dp"
+            android:key="backup_include_media"
+            android:summary="@string/pref_backup_include_media_summary"
+            android:title="@string/pref_backup_include_media" />
+
         <Preference
             android:icon="@drawable/ic_archive_24dp"
             android:key="create_one_off_backup"
