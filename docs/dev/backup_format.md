@@ -123,6 +123,13 @@ place a file. Concretely:
   storage *and* we are restoring into shared storage, i.e. when the user could plausibly have put
   the file back by hand. Otherwise it is dropped.
 
+A version 2 backup carries no files, so there is nothing to place and the stored path is all there
+is. It is re-rooted onto this device — `/storage/emulated/<id>/` and `/data/<user>/<package>/files/`
+are stripped and replaced with the local equivalents, keeping everything below the root — which is
+what lets an old backup be restored into a different user profile, or under a different
+`applicationId`. The deleted flag is left as the backup had it; `checkForDeletedFiles` corrects it
+in both directions on the next service start.
+
 Rows are marked deleted up front and cleared again once a file has actually been placed, once one
 already exists at the destination, or once `reconcileSharedStorage` finds a kept path that is
 present and readable. Reconciliation is restricted to shared storage because private app data is
@@ -159,9 +166,12 @@ the archive at all.
 
 **The relative form must never reach the messages table.**
 `Message.storageLocationFromCursor` treats any non-absolute value as a legacy bare filename and
-resolves it against the pre scoped storage layout. Import therefore converts back to absolute
-before inserting, gated on the header version: version 2 rows are inserted untouched so their bare
-filenames keep working, and within version 3 every value is known to be the relative form.
+resolves it against the pre scoped storage layout. Import therefore always converts back to
+absolute before inserting. What it converts differs by version: in version 3 every value is known
+to be the relative form, while a version 2 value is an absolute path that names the source device's
+storage root and gets re-rooted onto this device by `FileBackend.rebaseFilePath`. Values that are
+neither — a bare filename, or an absolute path under a root we do not recognise — are left exactly
+as they are, because the legacy fallback is the only thing that can resolve them.
 
 **No content level deduplication.** Two messages that share one physical file each get their own
 copy in the archive. Simpler, and the case is rare enough not to be worth a content addressed

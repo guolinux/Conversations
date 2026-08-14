@@ -250,8 +250,8 @@ public class ImportBackupWorker extends Worker {
                     new BufferedReader(
                             new InputStreamReader(gzipInputStream, StandardCharsets.UTF_8));
             final JsonReader jsonReader = new JsonReader(reader);
-            // version 2 stored absolute paths (or, for very old rows, a bare filename that
-            // getLegacyFileForFilename resolves); both are inserted untouched
+            // version 2 stored absolute paths (re-rooted onto this device below) or, for very old
+            // rows, a bare filename that getLegacyFileForFilename resolves
             importJsonRows(
                     db,
                     jsonReader,
@@ -358,6 +358,36 @@ public class ImportBackupWorker extends Worker {
             values.putNull(Message.RELATIVE_FILE_PATH);
         }
         values.put(Message.DELETED, 1);
+    }
+
+    /**
+     * Version 2 stores an absolute path, which names the storage root of the device and user
+     * profile the backup was made on. Restoring into a different profile would leave every
+     * attachment pointing at the source profile, so the path is re-rooted onto this device; the
+     * part below the root is what the file keeps in either storage.
+     *
+     * <p>Rows that predate scoped storage store a bare filename instead, which {@link
+     * Message#storageLocationFromCursor} resolves through the legacy layout. Those are left alone,
+     * as is anything else we cannot place, and the column stays absolute either way -- a relative
+     * value would be read back as one of those legacy filenames.
+     *
+     * <p>The deleted flag is left as the backup had it. Unlike version 3 there are no files in the
+     * archive to reconcile against, and {@code checkForDeletedFiles} corrects the flag in both
+     * directions on the next service start anyway.
+     */
+    private void rebaseStorageLocation(final ContentValues values) {
+        final var path = values.getAsString(Message.RELATIVE_FILE_PATH);
+        if (Strings.isNullOrEmpty(path) || path.charAt(0) != '/') {
+            return;
+        }
+        final var rebased =
+                FileBackend.rebaseFilePath(
+                        getApplicationContext(),
+                        path,
+                        asBoolean(values.get(Message.SHARED_STORAGE)));
+        if (rebased != null) {
+            values.put(Message.RELATIVE_FILE_PATH, rebased.getAbsolutePath());
+        }
     }
 
     /**
@@ -635,8 +665,12 @@ public class ImportBackupWorker extends Worker {
             }
             contentValues.put(Account.KEYS, Services.GSON.toJson(importReadyKeys));
         }
-        if (portablePaths && Message.TABLENAME.equals(table)) {
-            rewriteStorageLocation(contentValues);
+        if (Message.TABLENAME.equals(table)) {
+            if (portablePaths) {
+                rewriteStorageLocation(contentValues);
+            } else {
+                rebaseStorageLocation(contentValues);
+            }
         }
         if (this.includeOmemo) {
             db.insert(table, null, contentValues);

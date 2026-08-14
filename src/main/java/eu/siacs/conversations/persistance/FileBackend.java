@@ -876,6 +876,34 @@ public class FileBackend {
         return new File(getStorageRoot(context, sharedStorage), relativePath);
     }
 
+    /**
+     * The storage roots as they appear in a path that was written by another device or another user
+     * profile. The local roots are of no use for recognizing one: that is the whole point of the
+     * user id (and, for private storage, the package name) they embed.
+     */
+    private static final Pattern EXTERNAL_STORAGE_ROOT =
+            Pattern.compile("^/storage/emulated/[^/]+/");
+
+    private static final Pattern PRIVATE_STORAGE_ROOT =
+            Pattern.compile("^/data/(?:data|user/\\d+)/[^/]+/files/");
+
+    /**
+     * Re-roots an absolute path from a backup onto this device, keeping everything below the
+     * storage root. Returns null when the value is not an absolute path under a root we recognize,
+     * in which case the caller has to leave it alone -- a bare filename from before scoped storage
+     * ends up here, and {@link #getLegacyFileForFilename} is the only thing that can resolve it.
+     */
+    public static File rebaseFilePath(
+            final Context context, final String absolutePath, final boolean sharedStorage) {
+        final var root = sharedStorage ? EXTERNAL_STORAGE_ROOT : PRIVATE_STORAGE_ROOT;
+        final var matcher = root.matcher(absolutePath);
+        if (!matcher.find()) {
+            Log.w(Config.LOGTAG, "no known storage root in " + absolutePath);
+            return null;
+        }
+        return resolveFilePath(context, absolutePath.substring(matcher.end()), sharedStorage);
+    }
+
     private File getSharedStorageLocation(final String filename, final String mime) {
         return getSharedStorageLocation(mXmppConnectionService, filename, mime);
     }
