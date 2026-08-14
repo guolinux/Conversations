@@ -116,8 +116,13 @@ public class ExportBackupWorker extends Worker {
         final List<Uri> files;
         try {
             files = export();
-        } catch (final IOException | InvalidKeySpecException e) {
-            Log.d(Config.LOGTAG, "could not create backup", e);
+        } catch (final Throwable t) {
+            // deliberately Throwable: an OutOfMemoryError is an Error, and letting it escape means
+            // WorkManager fails the work silently -- the progress notification disappears and the
+            // user is never told that no backup was written. Cancellation does not end up here;
+            // export() handles WorkStoppedException itself.
+            Log.d(Config.LOGTAG, "could not create backup", t);
+            notifyFailure();
             return Result.failure();
         } finally {
             getApplicationContext()
@@ -379,6 +384,18 @@ public class ExportBackupWorker extends Worker {
                         + " path="
                         + file.getAbsolutePath());
         this.skipped.add(new SkippedFile(file, unreadable));
+    }
+
+    private void notifyFailure() {
+        final var context = getApplicationContext();
+        final var builder =
+                new NotificationCompat.Builder(context, "backup")
+                        .setContentTitle(context.getString(R.string.unable_to_create_backup))
+                        .setContentText(context.getString(R.string.unable_to_create_backup_hint))
+                        .setAutoCancel(true)
+                        .setSmallIcon(R.drawable.ic_archive_24dp);
+        context.getSystemService(NotificationManager.class)
+                .notify(BACKUP_CREATED_NOTIFICATION_ID, builder.build());
     }
 
     private NotificationCompat.Builder getNotification() {

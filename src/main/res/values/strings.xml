@@ -851,6 +851,8 @@
     <string name="restore_omemo_key">Restore OMEMO keys</string>
     <string name="restore_warning">Do not restore OMEMO keys in an attempt to clone (run simultaneously) an installation. Restoring OMEMO keys is only meant for migrations or in case you’ve lost the original device.</string>
     <string name="restore_warning_continued">Only restore backups you’ve personally created.</string>
+    <string name="unable_to_create_backup">Could not create backup</string>
+    <string name="unable_to_create_backup_hint">No backup file has been written. Try again, or disable “Include media files”.</string>
     <string name="unable_to_restore_backup">Could not restore backup.</string>
     <string name="unable_to_decrypt_backup">Could not decrypt backup. Is the password correct?</string>
     <string name="backup_channel_name">Backup &amp; Restore</string>
