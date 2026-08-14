@@ -47,10 +47,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -61,22 +58,19 @@ import java.util.Locale;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import javax.crypto.Cipher;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
+import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.io.CipherOutputStream;
+import org.bouncycastle.crypto.modes.AEADBlockCipher;
+import org.bouncycastle.crypto.modes.GCMBlockCipher;
+import org.bouncycastle.crypto.params.AEADParameters;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 public class ExportBackupWorker extends Worker {
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("yyyy-MM-dd-HH-mm", Locale.US);
-
-    private static final String KEY_TYPE = "AES";
-    private static final String CIPHER_MODE = "AES/GCM/NoPadding";
-    private static final String PROVIDER = "BC";
 
     public static final String MIME_TYPE = "application/vnd.conversations.backup";
 
@@ -122,13 +116,7 @@ public class ExportBackupWorker extends Worker {
         final List<Uri> files;
         try {
             files = export();
-        } catch (final IOException
-                | InvalidKeySpecException
-                | InvalidAlgorithmParameterException
-                | InvalidKeyException
-                | NoSuchPaddingException
-                | NoSuchAlgorithmException
-                | NoSuchProviderException e) {
+        } catch (final IOException | InvalidKeySpecException e) {
             Log.d(Config.LOGTAG, "could not create backup", e);
             return Result.failure();
         } finally {
@@ -171,14 +159,7 @@ public class ExportBackupWorker extends Worker {
         }
     }
 
-    private List<Uri> export()
-            throws IOException,
-                    InvalidKeySpecException,
-                    InvalidAlgorithmParameterException,
-                    InvalidKeyException,
-                    NoSuchPaddingException,
-                    NoSuchAlgorithmException,
-                    NoSuchProviderException {
+    private List<Uri> export() throws IOException, InvalidKeySpecException {
         final Context context = getApplicationContext();
         final var appSettings = new AppSettings(context);
         final var backupLocation = appSettings.getBackupLocation();
@@ -225,14 +206,7 @@ public class ExportBackupWorker extends Worker {
             final Uri backupLocation,
             final int max,
             final int count)
-            throws IOException,
-                    InvalidKeySpecException,
-                    InvalidAlgorithmParameterException,
-                    InvalidKeyException,
-                    NoSuchPaddingException,
-                    NoSuchAlgorithmException,
-                    NoSuchProviderException,
-                    WorkStoppedException {
+            throws IOException, InvalidKeySpecException, WorkStoppedException {
         final var context = getApplicationContext();
         Log.d(
                 Config.LOGTAG,
@@ -294,15 +268,15 @@ public class ExportBackupWorker extends Worker {
         backupFileHeader.write(dataOutputStream);
         dataOutputStream.flush();
 
-        final Cipher cipher =
-                Compatibility.twentyEight()
-                        ? Cipher.getInstance(CIPHER_MODE)
-                        : Cipher.getInstance(CIPHER_MODE, PROVIDER);
+        // BouncyCastle rather than the JCE cipher, which is what ImportBackupWorker already reads
+        // with. Conscrypt's AEAD implementation buffers everything handed to update() until
+        // doFinal(), so peak memory is the size of the entire backup -- unnoticeable for a database
+        // dump, an OutOfMemoryError once media files are part of it. The ciphertext is the same
+        // either way, so backups stay readable by both.
         final byte[] key = getKey(password, salt);
-        SecretKeySpec keySpec = new SecretKeySpec(key, KEY_TYPE);
-        IvParameterSpec ivSpec = new IvParameterSpec(IV);
-        cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
-        CipherOutputStream cipherOutputStream = new CipherOutputStream(outputStream, cipher);
+        final AEADBlockCipher cipher = GCMBlockCipher.newInstance(AESEngine.newInstance());
+        cipher.init(true, new AEADParameters(new KeyParameter(key), 128, IV));
+        final CipherOutputStream cipherOutputStream = new CipherOutputStream(outputStream, cipher);
 
         final ZipOutputStream zipOutputStream = new ZipOutputStream(cipherOutputStream);
         zipOutputStream.putNextEntry(new ZipEntry(DB_ENTRY_NAME));
