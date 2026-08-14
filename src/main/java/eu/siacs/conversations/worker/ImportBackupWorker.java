@@ -136,6 +136,20 @@ public class ImportBackupWorker extends Worker {
 
     private final List<RestoreIssue> issues = new ArrayList<>();
 
+    /** read from the header before anything else; only the issue wording depends on it */
+    private int backupVersion;
+
+    /**
+     * Records an attachment the restore could not make usable. Logged in the same greppable
+     * key=value form as the {@code backup-skipped} lines on the export side, so the paths can be
+     * pulled with {@code adb logcat -s conversations | grep restore-issue} instead of going through
+     * the share action on the device.
+     */
+    private void issue(final File file, final Outcome outcome) {
+        Log.w(Config.LOGTAG, "restore-issue reason=" + outcome + " path=" + file.getAbsolutePath());
+        this.issues.add(new RestoreIssue(file, outcome));
+    }
+
     public ImportBackupWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
         final var inputData = workerParams.getInputData();
@@ -224,6 +238,7 @@ public class ImportBackupWorker extends Worker {
         final CountingInputStream countingInputStream = new CountingInputStream(inputStream);
         final DataInputStream dataInputStream = new DataInputStream(countingInputStream);
         final BackupFileHeader backupFileHeader = BackupFileHeader.read(dataInputStream);
+        this.backupVersion = backupFileHeader.getVersion();
         Log.d(Config.LOGTAG, backupFileHeader.toString());
 
         final var accounts = database.getAccountAddresses();
@@ -260,6 +275,7 @@ public class ImportBackupWorker extends Worker {
                     fileSize,
                     countingInputStream,
                     false);
+            reportSharedStorage(db, backupFileHeader.getJid());
         } else {
             final ZipInputStream zipInputStream = new ZipInputStream(cipherInputStream);
             final ZipEntry firstEntry = zipInputStream.getNextEntry();
@@ -432,10 +448,10 @@ public class ImportBackupWorker extends Worker {
                     // there but not ours to read. Same rule as in restoreMediaEntry: do not call
                     // it deleted, report it so the user can hand ownership back.
                     recovered.add(cursor.getString(0));
-                    this.issues.add(new RestoreIssue(file, Outcome.UNREADABLE));
+                    issue(file, Outcome.UNREADABLE);
                 } else {
                     gone.add(cursor.getString(0));
-                    this.issues.add(new RestoreIssue(file, Outcome.MISSING));
+                    issue(file, Outcome.MISSING);
                 }
             }
         }
@@ -469,6 +485,61 @@ public class ImportBackupWorker extends Worker {
                         + recoveredUuids.size()
                         + " attachments from shared storage, gave up on "
                         + goneUuids.size());
+    }
+
+    /**
+     * Reports which attachments a version 2 restore leaves without a usable file. There is nothing
+     * to place and nothing to reconcile against -- the archive carries no files -- but the paths
+     * now point at this device, so we can at least say which ones are not there.
+     *
+     * <p>A missing file is flagged deleted while keeping its path, so dropping the file into place
+     * and restarting the app recovers it through {@code checkForDeletedFiles}. Restricted to shared
+     * storage for the same reason as {@link #reconcileSharedStorage}, and to rows the source device
+     * did not already consider deleted, which are not news.
+     */
+    private void reportSharedStorage(final SQLiteDatabase db, final Jid jid) {
+        final var missing = new ImmutableList.Builder<String>();
+        try (final Cursor cursor =
+                db.rawQuery(
+                        "select messages.uuid,messages.relativeFilePath from messages join"
+                            + " conversations on conversations.uuid=messages.conversationUuid join"
+                            + " accounts on conversations.accountUuid=accounts.uuid where"
+                            + " accounts.username=? and accounts.server=? and"
+                            + " messages.relativeFilePath is not null and messages.sharedStorage=1"
+                            + " and messages.deleted=0 and messages.type in (1,2,5)",
+                        new String[] {jid.getLocal(), jid.getDomain().toString()})) {
+            while (cursor.moveToNext()) {
+                final var file = new File(cursor.getString(1));
+                if (file.canRead()) {
+                    continue;
+                }
+                if (file.exists()) {
+                    // there but not ours to read. Nothing to change in the database: the file is
+                    // present, so the app keeps referring to it, and handing ownership back is
+                    // something only the user can do.
+                    issue(file, Outcome.UNREADABLE);
+                } else {
+                    missing.add(cursor.getString(0));
+                    issue(file, Outcome.MISSING);
+                }
+            }
+        }
+        final var missingUuids = missing.build();
+        if (missingUuids.isEmpty()) {
+            return;
+        }
+        final var values = new ContentValues();
+        values.put(Message.DELETED, 1);
+        db.beginTransaction();
+        try {
+            for (final String uuid : missingUuids) {
+                db.update(Message.TABLENAME, values, Message.UUID + "=?", new String[] {uuid});
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        Log.d(Config.LOGTAG, "marked " + missingUuids.size() + " attachments as deleted");
     }
 
     /**
@@ -568,11 +639,11 @@ public class ImportBackupWorker extends Worker {
             }
         } else if (!destinationFile.exists()) {
             // the archive carried the file but we could not put it anywhere
-            this.issues.add(new RestoreIssue(destinationFile, Outcome.FAILED));
+            issue(destinationFile, Outcome.FAILED);
         } else if (destinationFile.canRead()) {
-            this.issues.add(new RestoreIssue(destinationFile, Outcome.KEPT));
+            issue(destinationFile, Outcome.KEPT);
         } else {
-            this.issues.add(new RestoreIssue(destinationFile, Outcome.UNREADABLE));
+            issue(destinationFile, Outcome.UNREADABLE);
         }
         final ContentValues values = new ContentValues();
         values.put(Message.RELATIVE_FILE_PATH, destinationFile.getAbsolutePath());
@@ -727,12 +798,19 @@ public class ImportBackupWorker extends Worker {
         if (group.isEmpty()) {
             return null;
         }
+        // a version 2 archive never carried files, so wording about what the restore did or did
+        // not place would be meaningless for the two outcomes it can produce
+        final boolean mediaArchive = this.backupVersion >= 3;
         final int plural =
                 switch (outcome) {
-                    case UNREADABLE -> R.plurals.restore_unreadable;
+                    case UNREADABLE ->
+                            mediaArchive
+                                    ? R.plurals.restore_unreadable
+                                    : R.plurals.restore_unreadable_v2;
                     case FAILED -> R.plurals.restore_failed;
                     case KEPT -> R.plurals.restore_kept;
-                    case MISSING -> R.plurals.restore_missing;
+                    case MISSING ->
+                            mediaArchive ? R.plurals.restore_missing : R.plurals.restore_missing_v2;
                 };
         return getApplicationContext()
                 .getResources()

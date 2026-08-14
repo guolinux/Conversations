@@ -1098,6 +1098,10 @@
         <item quantity="one">%d file was already on this device, could not be overwritten and cannot be read</item>
         <item quantity="other">%d files were already on this device, could not be overwritten and cannot be read</item>
     </plurals>
+    <plurals name="restore_unreadable_v2">
+        <item quantity="one">%d file was already on this device, but could not be read</item>
+        <item quantity="other">%d files were already on this device, but could not be read</item>
+    </plurals>
     <plurals name="restore_kept">
         <item quantity="one">%d file was already on this device and could not be overwritten</item>
         <item quantity="other">%d files were already on this device and could not be overwritten</item>
@@ -1105,6 +1109,10 @@
     <plurals name="restore_missing">
         <item quantity="one">%d file was neither part of the backup nor on this device and is now marked as deleted</item>
         <item quantity="other">%d files were neither part of the backup nor on this device and are now marked as deleted</item>
+    </plurals>
+    <plurals name="restore_missing_v2">
+        <item quantity="one">%d file was not on this device and is now marked as deleted</item>
+        <item quantity="other">%d files were not on this device and are now marked as deleted</item>
     </plurals>
     <plurals name="restore_failed">
         <item quantity="one">%d file could not be restored</item>
