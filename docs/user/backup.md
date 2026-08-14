@@ -40,6 +40,6 @@ Do this **before** you wipe the old device: unlike a file that is merely missing
 ### Media files could not be restored
 After restoring, Conversations may report that some files were already on this device and could not be overwritten. This happens when a file of the same name is still there from before and Android considers it to belong to a different app, which also prevents Conversations from replacing it.
 
-If such a file can still be read it is kept and used as it is, and your chat looks as expected. If it cannot be read, the attachment stays unusable until you hand ownership back with the same command as above. Tap *Share file list* on the notification to get the affected paths.
+If such a file can still be read it is kept and used as it is, and your chat looks as expected. If it cannot be read, the attachment stays unusable until you hand ownership back with the same command as above. Tap *Share file list* on the notification to get the affected paths, or list them with `adb logcat -s conversations | grep restore-issue`.
 
 Files that were neither part of the backup nor present on this device are marked as deleted; those are gone for good.
