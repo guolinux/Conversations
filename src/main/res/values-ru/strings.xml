@@ -84,12 +84,12 @@
 \n<b>Внимание:</b> данная операция не повлияет на сообщения, хранящиеся на других устройствах или серверах.</string>
     <string name="delete_file_dialog">Удалить файл</string>
     <string name="choose_presence">Выберите устройство</string>
-    <string name="send_unencrypted_message">Отправить незашифрованное сообщение</string>
+    <string name="send_unencrypted_message">Незашифрованное сообщение</string>
     <string name="send_message">Сообщение</string>
     <string name="send_message_to_x">Сообщение для %s</string>
     <string name="send_omemo_x509_message">Зашифрованное v\\OMEMO сообщение</string>
     <string name="your_nick_has_been_changed">Ваше имя изменено</string>
-    <string name="send_unencrypted">Отправить в незашифрованном виде</string>
+    <string name="send_unencrypted">Отправить без шифрования</string>
     <string name="decryption_failed">Расшифровка невозможна. Вероятно, у вас нет надлежащего ключа.</string>
     <string name="openkeychain_required">Установите OpenKeychain</string>
     <string name="openkeychain_required_long"><![CDATA[%1$s использует <b>OpenKeychain</b> для шифрования и дешифрования сообщений и управления открытыми ключами.<br><br>OpenKeychain распространяется под лицензией GPLv3+ и доступна для загрузки через F-Droid или Google Play.<br><br><small>(Потребуется перезапуск %1$s после установки.)</small>]]></string>
@@ -449,7 +449,7 @@
     <string name="pref_show_connection_options_summary">Показывать расширенные настройки соединения при настройке аккаунта</string>
     <string name="hostname_example">xmpp.example.com</string>
     <string name="action_add_account_with_certificate">Войти с помощью сертификата</string>
-    <string name="unable_to_parse_certificate">Невозможно прочитать сертификат</string>
+    <string name="unable_to_parse_certificate">Невозможно обработать сертификат</string>
     <string name="mam_prefs">Настройки архивирования</string>
     <string name="server_side_mam_prefs">Настройки архивирования на сервере</string>
     <string name="fetching_mam_prefs">Получение настроек архивирования. Подождите…</string>
@@ -933,7 +933,7 @@
     <string name="failed_deliveries">Недоставленные сообщения</string>
     <string name="more_options">Ещё</string>
     <string name="no_application_found">Не найдено приложения</string>
-    <string name="unable_to_parse_invite">Невозможно разобрать приглашение</string>
+    <string name="unable_to_parse_invite">Невозможно обработать приглашение</string>
     <string name="server_does_not_support_easy_onboarding_invites">Сервер не поддерживает создание приглашений</string>
     <string name="no_active_accounts_support_this">Ни один активный аккаунт не поддерживает эту функцию</string>
     <string name="backup_started_message">Резервное копирование начато. Вы получите уведомление, как только оно будет завершено.</string>
@@ -1056,7 +1056,7 @@
     <string name="pref_large_font">Крупный шрифт</string>
     <string name="pref_large_font_summary">Увеличить размер шрифта сообщений</string>
     <string name="pref_summary_security">Сквозное шифрование, слепое доверие до подтверждения, обнаружение атаки посредника</string>
-    <string name="send_encrypted_message">Отправить зашифрованное сообщение</string>
+    <string name="send_encrypted_message">Зашифрованное сообщение</string>
     <string name="corresponding_chats_closed">Соответствующие беседы архивированы.</string>
     <string name="pref_title_trust_system_ca_store_summary">Доверять сертификатам системных УЦ</string>
     <string name="pref_connection_summary_w_cd">Имя хоста и порт, Tor, обзор каналов</string>
@@ -1255,5 +1255,5 @@
     <string name="attachment_choice_recording">Аудиозапись</string>
     <string name="attachment_choice_contact">Контакт</string>
     <string name="note_to_self">Заметка себе</string>
-    <string name="invalid_contact">Невозможно разобрать контакт</string>
+    <string name="invalid_contact">Невозможно обработать контакт</string>
 </resources>
