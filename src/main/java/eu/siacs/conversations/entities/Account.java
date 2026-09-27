@@ -387,13 +387,14 @@ public class Account extends AbstractEntity implements AvatarService.Avatar {
         if (fastMechanism == null || Strings.isNullOrEmpty(token)) {
             return null;
         }
-        if (fastMechanism.hashFunction().equals("SHA-256")) {
-            return new HashedTokenSha256(this, fastMechanism.channelBinding());
-        } else if (fastMechanism.hashFunction().equals("SHA-512")) {
-            return new HashedTokenSha512(this, fastMechanism.channelBinding());
-        } else {
-            return null;
-        }
+        final var hash = fastMechanism.hashFunction();
+        final var cb = fastMechanism.channelBinding();
+        final var version = fastMechanism.version();
+        return switch (hash) {
+            case "SHA-256" -> new HashedTokenSha256(this, version, cb);
+            case "SHA-512" -> new HashedTokenSha512(this, version, cb);
+            default -> null;
+        };
     }
 
     public SaslMechanism getQuickStartMechanism() {
