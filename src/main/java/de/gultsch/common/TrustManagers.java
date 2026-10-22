@@ -37,9 +37,10 @@ public final class TrustManagers {
     public static X509TrustManager createForAndroidVersion(final Context context)
             throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
-            return TrustManagers.createDefaultWithBundledLetsEncrypt(context);
+            return new BlocklistTrustManager(
+                    TrustManagers.createDefaultWithBundledLetsEncrypt(context));
         } else {
-            return TrustManagers.createDefaultTrustManager();
+            return new BlocklistTrustManager(TrustManagers.createDefaultTrustManager());
         }
     }
 
