@@ -1078,6 +1078,8 @@
     <string name="pref_backup_recurring">Recurring backup</string>
     <string name="pref_fullscreen_notification">Full screen notifications</string>
     <string name="pref_fullscreen_notification_summary">Allow this app to show incoming call notifications that take up the full screen when the device is locked.</string>
+    <string name="pref_display_over_other_apps">Display over other apps</string>
+    <string name="pref_display_over_other_apps_summary">Allow this app to display over other apps to show incoming calls in full screen while the device is unlocked.</string>
     <string name="unsupported_operation">Unsupported operation</string>
     <string name="allow_private_messages">Allow private messages</string>
     <string name="edit_nick">Edit nick</string>

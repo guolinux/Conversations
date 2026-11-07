@@ -579,6 +579,30 @@ public class NotificationService {
             Log.w(Config.LOGTAG, "could not start vibrating for incoming call", e);
         }
         showIncomingCallNotification(id, media, false);
+        showIncomingCallScreenIfUnlocked(id);
+    }
+
+    // While the device is unlocked and in use Android shows the full screen intent of the incoming
+    // call notification only as a heads-up notification. Apps that may display over other apps (or
+    // are in the foreground anyway) are allowed to start activities, so we bring up the call screen
+    // ourselves. Users who prefer the heads-up notification can revoke that permission.
+    private void showIncomingCallScreenIfUnlocked(final AbstractJingleConnection.Id id) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                && !this.mIsInForeground
+                && !Settings.canDrawOverlays(mXmppConnectionService)) {
+            return;
+        }
+        if (new Device(mXmppConnectionService).isScreenLocked()) {
+            // the full screen intent of the notification takes care of the lock screen
+            return;
+        }
+        final Intent intent = createRtpSessionIntent(id, Intent.ACTION_VIEW);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            mXmppConnectionService.startActivity(intent);
+        } catch (final RuntimeException e) {
+            Log.w(Config.LOGTAG, "could not show incoming call screen", e);
+        }
     }
 
     // The incoming call notification is insistent and should keep vibrating until it is answered.
@@ -804,19 +828,23 @@ public class NotificationService {
         return builder.build();
     }
 
+    private Intent createRtpSessionIntent(
+            final AbstractJingleConnection.Id id, final String action) {
+        final Intent intent = new Intent(mXmppConnectionService, RtpSessionActivity.class);
+        intent.setAction(action);
+        intent.putExtra(
+                RtpSessionActivity.EXTRA_ACCOUNT, id.account.getJid().asBareJid().toString());
+        intent.putExtra(RtpSessionActivity.EXTRA_WITH, id.with.toString());
+        intent.putExtra(RtpSessionActivity.EXTRA_SESSION_ID, id.sessionId);
+        return intent;
+    }
+
     private PendingIntent createPendingRtpSession(
             final AbstractJingleConnection.Id id, final String action, final int requestCode) {
-        final Intent fullScreenIntent =
-                new Intent(mXmppConnectionService, RtpSessionActivity.class);
-        fullScreenIntent.setAction(action);
-        fullScreenIntent.putExtra(
-                RtpSessionActivity.EXTRA_ACCOUNT, id.account.getJid().asBareJid().toString());
-        fullScreenIntent.putExtra(RtpSessionActivity.EXTRA_WITH, id.with.toString());
-        fullScreenIntent.putExtra(RtpSessionActivity.EXTRA_SESSION_ID, id.sessionId);
         return PendingIntent.getActivity(
                 mXmppConnectionService,
                 requestCode,
-                fullScreenIntent,
+                createRtpSessionIntent(id, action),
                 s()
                         ? PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
                         : PendingIntent.FLAG_UPDATE_CURRENT);

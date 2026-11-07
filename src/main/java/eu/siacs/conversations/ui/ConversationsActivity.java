@@ -49,6 +49,7 @@ import android.widget.Toast;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -117,7 +118,7 @@ public class ConversationsActivity extends QrCodeProcessingActivity
     private final PendingItem<ActivityResult> postponedActivityResult = new PendingItem<>();
     private ActivityConversationsBinding binding;
     private boolean mActivityPaused = true;
-    private AlertDialog fullScreenIntentDialog = null;
+    private AlertDialog permissionDialog = null;
 
     private static boolean isViewOrShareIntent(Intent i) {
         Log.d(Config.LOGTAG, "action: " + (i == null ? null : i.getAction()));
@@ -184,7 +185,7 @@ public class ConversationsActivity extends QrCodeProcessingActivity
             if (requestNotificationPermissionIfNeeded()) {
                 return;
             }
-            openFullScreenIntentDialogIfNeeded();
+            openCallPermissionDialogsIfNeeded();
         }
     }
 
@@ -245,27 +246,59 @@ public class ConversationsActivity extends QrCodeProcessingActivity
         return false;
     }
 
-    private String getFullScreenIntentPreferenceKey() {
-        final String device = PhoneHelper.getAndroidId(this);
-        return "show_full_screen_intent" + (device == null ? "" : device);
+    private void openCallPermissionDialogsIfNeeded() {
+        if (openFullScreenIntentDialogIfNeeded()) {
+            return;
+        }
+        openDisplayOverOtherAppsDialogIfNeeded();
     }
 
     // without this permission Android 14+ shows incoming calls as regular notifications that
     // neither turn on the screen nor bring up the call screen on the lock screen
     private boolean openFullScreenIntentDialogIfNeeded() {
-        if (this.fullScreenIntentDialog != null && this.fullScreenIntentDialog.isShowing()) {
-            return true;
-        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-                || !getPreferences().getBoolean(getFullScreenIntentPreferenceKey(), true)
                 || getSystemService(NotificationManager.class).canUseFullScreenIntent()) {
             return false;
         }
-        final Intent intent = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT);
+        return openPermissionDialogIfNeeded(
+                "show_full_screen_intent",
+                Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                R.string.pref_fullscreen_notification,
+                R.string.pref_fullscreen_notification_summary);
+    }
+
+    // without this permission incoming calls only show up as heads-up notifications while the
+    // device is unlocked and in use
+    private boolean openDisplayOverOtherAppsDialogIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Settings.canDrawOverlays(this)) {
+            return false;
+        }
+        return openPermissionDialogIfNeeded(
+                "show_display_over_other_apps",
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                R.string.pref_display_over_other_apps,
+                R.string.pref_display_over_other_apps_summary);
+    }
+
+    // asks once per device
+    private boolean openPermissionDialogIfNeeded(
+            final String preferenceKeyPrefix,
+            final String settingsAction,
+            @StringRes final int title,
+            @StringRes final int message) {
+        if (this.permissionDialog != null && this.permissionDialog.isShowing()) {
+            return true;
+        }
+        final String device = PhoneHelper.getAndroidId(this);
+        final String preferenceKey = preferenceKeyPrefix + (device == null ? "" : device);
+        if (!getPreferences().getBoolean(preferenceKey, true)) {
+            return false;
+        }
+        final Intent intent = new Intent(settingsAction);
         intent.setData(Uri.parse("package:" + getPackageName()));
         final MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
-        builder.setTitle(R.string.pref_fullscreen_notification);
-        builder.setMessage(R.string.pref_fullscreen_notification_summary);
+        builder.setTitle(title);
+        builder.setMessage(message);
         builder.setPositiveButton(
                 R.string.next,
                 (dialog, which) -> {
@@ -277,15 +310,11 @@ public class ConversationsActivity extends QrCodeProcessingActivity
                     }
                 });
         builder.setOnDismissListener(
-                dialog ->
-                        getPreferences()
-                                .edit()
-                                .putBoolean(getFullScreenIntentPreferenceKey(), false)
-                                .apply());
+                dialog -> getPreferences().edit().putBoolean(preferenceKey, false).apply());
         final AlertDialog dialog = builder.create();
         dialog.setCanceledOnTouchOutside(false);
         dialog.show();
-        this.fullScreenIntentDialog = dialog;
+        this.permissionDialog = dialog;
         return true;
     }
 
@@ -330,7 +359,7 @@ public class ConversationsActivity extends QrCodeProcessingActivity
                         ConversationFragment.startStopPending(this);
                         break;
                     case REQUEST_POST_NOTIFICATION:
-                        openFullScreenIntentDialogIfNeeded();
+                        openCallPermissionDialogsIfNeeded();
                         break;
                 }
             }
@@ -357,7 +386,7 @@ public class ConversationsActivity extends QrCodeProcessingActivity
         if (activityResult.requestCode == REQUEST_BATTERY_OP) {
             // the result code is always 0 even when battery permission were granted
             if (!requestNotificationPermissionIfNeeded()) {
-                openFullScreenIntentDialogIfNeeded();
+                openCallPermissionDialogsIfNeeded();
             }
             XmppConnectionService.toggleForegroundService(xmppConnectionService);
         }
