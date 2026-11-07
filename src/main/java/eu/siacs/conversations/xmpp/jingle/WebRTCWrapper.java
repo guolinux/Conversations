@@ -218,6 +218,7 @@ public class WebRTCWrapper {
     private Context context = null;
     private EglBase eglBase = null;
     private VideoSourceWrapper videoSourceWrapper;
+    private volatile boolean videoEnabledByUser = true;
 
     WebRTCWrapper(final EventCallback eventCallback) {
         this.eventCallback = eventCallback;
@@ -580,9 +581,17 @@ public class WebRTCWrapper {
                 TrackWrapper.get(peerConnection, this.localVideoTrack);
         if (videoTrack.isPresent()) {
             videoTrack.get().setEnabled(enabled);
+            this.videoEnabledByUser = enabled;
             return;
         }
         throw new IllegalStateException("Local video track does not exist");
+    }
+
+    // Unlike isVideoEnabled() this does not look up the track through the peer connection and is
+    // safe to call from any thread. PeerConnection.getTransceivers() disposes the transceivers it
+    // returned before and must not be called from multiple threads at the same time.
+    boolean isVideoEnabledByUser() {
+        return this.videoEnabledByUser;
     }
 
     synchronized ListenableFuture<SessionDescription> setLocalDescription(
