@@ -578,7 +578,12 @@ public class WebRTCWrapper {
         final Optional<VideoTrack> videoTrack =
                 TrackWrapper.get(peerConnection, this.localVideoTrack);
         if (videoTrack.isPresent()) {
-            return videoTrack.get().enabled();
+            try {
+                return videoTrack.get().enabled();
+            } catch (final IllegalStateException e) {
+                // the call might have been ended on another thread
+                return false;
+            }
         }
         return false;
     }
