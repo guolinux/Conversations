@@ -521,6 +521,13 @@ public class WebRTCWrapper {
         return videoSourceWrapper.switchCamera();
     }
 
+    void restartVideoCaptureIfInterrupted() {
+        final VideoSourceWrapper videoSourceWrapper = this.videoSourceWrapper;
+        if (videoSourceWrapper != null) {
+            videoSourceWrapper.restartCaptureIfInterrupted();
+        }
+    }
+
     boolean isMicrophoneEnabled() {
         final Optional<AudioTrack> audioTrack =
                 TrackWrapper.get(peerConnection, this.localAudioTrack);
@@ -582,6 +589,9 @@ public class WebRTCWrapper {
         if (videoTrack.isPresent()) {
             videoTrack.get().setEnabled(enabled);
             this.videoEnabledByUser = enabled;
+            if (enabled) {
+                restartVideoCaptureIfInterrupted();
+            }
             return;
         }
         throw new IllegalStateException("Local video track does not exist");

@@ -2753,6 +2753,13 @@ public class JingleRtpConnection extends AbstractJingleConnection
         return webRTCWrapper.switchCamera();
     }
 
+    public void restartVideoCaptureIfInterrupted() {
+        // with video disabled there is no need to bring the camera back (and its indicator on)
+        if (webRTCWrapper.isVideoEnabledByUser()) {
+            webRTCWrapper.restartVideoCaptureIfInterrupted();
+        }
+    }
+
     @Override
     public synchronized void onCallIntegrationShowIncomingCallUi() {
         if (isTerminated()) {
