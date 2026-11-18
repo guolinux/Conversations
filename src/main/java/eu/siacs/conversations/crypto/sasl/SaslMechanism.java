@@ -114,6 +114,12 @@ public abstract class SaslMechanism {
             Preconditions.checkNotNull(channelBinding, "Use ChannelBinding.NONE instead of null");
             if (mechanisms.contains(External.MECHANISM) && account.getPrivateKeyAlias() != null) {
                 return new External(account);
+            } else if (Strings.isNullOrEmpty(account.getPassword())) {
+                if (mechanisms.contains(OAuthBearer.MECHANISM)) {
+                    return new OAuthBearer(account);
+                } else if (mechanisms.contains(Anonymous.MECHANISM)) {
+                    return new Anonymous(account);
+                }
             } else if (mechanisms.contains(ScramSha512Plus.MECHANISM)
                     && channelBinding != ChannelBinding.NONE) {
                 return new ScramSha512Plus(account, channelBinding);
@@ -133,12 +139,6 @@ public abstract class SaslMechanism {
                 return new Plain(account);
             } else if (mechanisms.contains(DigestMd5.MECHANISM)) {
                 return new DigestMd5(account);
-            } else if (Strings.isNullOrEmpty(account.getPassword())) {
-                if (mechanisms.contains(OAuthBearer.MECHANISM)) {
-                    return new OAuthBearer(account);
-                } else if (mechanisms.contains(Anonymous.MECHANISM)) {
-                    return new Anonymous(account);
-                }
             }
             return null;
         }
