@@ -123,9 +123,13 @@ public abstract class SaslMechanism {
         }
 
         private SaslMechanism of(
-                final Collection<String> mechanisms, final ChannelBinding channelBinding) {
+                final Collection<String> mechanisms,
+                final ChannelBinding channelBinding,
+                final boolean requireChannelBinding) {
             Preconditions.checkNotNull(channelBinding, "Use ChannelBinding.NONE instead of null");
-            if (mechanisms.contains(External.MECHANISM) && credential.privateKeyAlias != null) {
+            if (!requireChannelBinding
+                    && mechanisms.contains(External.MECHANISM)
+                    && credential.privateKeyAlias != null) {
                 return new External(account);
             } else if (mechanisms.contains(ScramSha512Plus.MECHANISM)
                     && channelBinding != ChannelBinding.NONE) {
@@ -136,6 +140,8 @@ public abstract class SaslMechanism {
             } else if (mechanisms.contains(ScramSha1Plus.MECHANISM)
                     && channelBinding != ChannelBinding.NONE) {
                 return new ScramSha1Plus(account, credential, channelBinding);
+            } else if (requireChannelBinding) {
+                return null;
             } else if (mechanisms.contains(ScramSha512.MECHANISM)) {
                 return new ScramSha512(account, credential);
             } else if (mechanisms.contains(ScramSha256.MECHANISM)) {
@@ -157,17 +163,22 @@ public abstract class SaslMechanism {
                 final Collection<String> mechanisms,
                 final Collection<ChannelBinding> bindings,
                 final Version version,
-                final SSLSockets.Version sslVersion) {
+                final SSLSockets.Version sslVersion,
+                final boolean requireChannelBinding) {
             final HashedToken fastMechanism = getFastMechanism();
-            if (version == Version.SASL_2 && fastMechanism != null) {
+            if (version == Version.SASL_2
+                    && fastMechanism != null
+                    && (!requireChannelBinding
+                            || (fastMechanism.getChannelBinding() != ChannelBinding.NONE
+                                    && ensureAvailable(fastMechanism, sslVersion) != null))) {
                 return fastMechanism;
             }
             final ChannelBinding channelBinding = ChannelBinding.best(bindings, sslVersion);
-            return of(mechanisms, channelBinding);
+            return of(mechanisms, channelBinding, requireChannelBinding);
         }
 
         public SaslMechanism of(final String mechanism, final ChannelBinding channelBinding) {
-            return of(Collections.singleton(mechanism), channelBinding);
+            return of(Collections.singleton(mechanism), channelBinding, false);
         }
 
         public HashedToken getFastMechanism() {

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <data>
+        <variable name="setupViewModel" type="im.conversations.android.ui.model.SetupViewModel" />
+        <variable name="submit" type="com.google.common.base.Supplier&lt;Boolean&gt;" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/hostname_input_layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="4dp"
+                android:layout_weight="5"
+                android:enabled="@{!setupViewModel.isLoading()}"
+                android:hint="@string/account_settings_hostname"
+                app:errorText="@{setupViewModel.hostnameError}">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/hostname"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="flagNoExtractUi|actionNext"
+                    android:inputType="text|textNoSuggestions"
+                    android:maxLines="1"
+                    android:text="@={setupViewModel.hostname}"
+                    app:editorAction="@{submit}" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/port_input_layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="4dp"
+                android:layout_weight="2"
+                android:enabled="@{!setupViewModel.isLoading()}"
+                android:hint="@string/account_settings_port"
+                app:errorText="@{setupViewModel.portError}">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/port"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="flagNoExtractUi|actionNext"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:maxLength="5"
+                    android:text="@={setupViewModel.port}"
+                    app:editorAction="@{submit}" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="4dp"
+            android:layout_marginVertical="8sp"
+            android:checked="@={setupViewModel.opportunisticTls}"
+            android:enabled="@{!setupViewModel.isLoading()}"
+            android:text="@string/use_opportunistic_tls" />
+    </LinearLayout>
+</layout>

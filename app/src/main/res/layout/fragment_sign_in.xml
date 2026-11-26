@@ -103,6 +103,24 @@
                         app:editorAction="@{()->setupViewModel.submitXmppAddress()}" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <LinearLayout
+                    android:id="@+id/connection_options"
+                    android:layout_width="488dp"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/xmpp_address_input_layout"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical"
+                    android:visibility="@{setupViewModel.showHostnameAndPort() ? View.VISIBLE : View.GONE}">
+
+                    <include
+                        layout="@layout/setup_connection_fields"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:setupViewModel="@{setupViewModel}"
+                        app:submit="@{() -> setupViewModel.submitXmppAddress()}" />
+                </LinearLayout>
+
                 <Button
                     style="@style/Widget.Material3.Button.TextButton"
                     android:id="@+id/register"
@@ -112,7 +130,7 @@
                     android:text="@string/no_account_register"
                     android:layout_centerHorizontal="true"
                     android:enabled="@{!setupViewModel.isLoading()}"
-                    android:layout_below="@+id/xmpp_address_input_layout"
+                    android:layout_below="@id/connection_options"
                     />
 
                 <com.google.android.material.button.MaterialButton
@@ -120,7 +138,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
-                    android:layout_alignParentBottom="true"
+                    android:layout_below="@id/register"
+                    android:layout_marginTop="16dp"
                     android:enabled="@{!setupViewModel.isLoading()}"
                     android:onClick="@{(v) -> setupViewModel.submitXmppAddress()}"
                     android:text="@string/next" />

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <SwitchPreferenceCompat
+        android:defaultValue="@bool/show_connection_options"
+        android:key="show_connection_options"
+        android:summary="@string/pref_show_connection_options_summary"
+        android:title="@string/pref_show_connection_options" />
+</PreferenceScreen>

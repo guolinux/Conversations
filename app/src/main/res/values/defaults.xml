@@ -6,7 +6,9 @@
     <bool name="allow_screenshots">true</bool>
     <bool name="btbv">true</bool>
     <bool name="trust_system_ca_store">true</bool>
-    <string name="omemo_setting_default" translatable="false">default_on</string>
+    <bool name="show_connection_options">true</bool>
+    <bool name="channel_binding_required">true</bool>
+    <string name="omemo_setting_default" translatable="false">default_off</string>
     <string name="incoming_call_ringtone" translatable="false">content://settings/system/ringtone</string>
     <integer name="grace_period">144</integer>
     <integer name="auto_accept_filesize">524288</integer>

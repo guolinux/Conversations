@@ -30,7 +30,10 @@ public class AccountRepository extends AbstractRepository {
     }
 
     private Account createAccount(
-            @NonNull final BareJid address, final String password, final boolean loginAndBind)
+            @NonNull final BareJid address,
+            final String password,
+            final boolean loginAndBind,
+            final Connection connection)
             throws GeneralSecurityException, IOException {
         if (database.accountDao().hasAccount(address)) {
             throw new AccountAlreadyExistsException(address);
@@ -41,6 +44,7 @@ public class AccountRepository extends AbstractRepository {
         entity.enabled = true;
         entity.loginAndBind = loginAndBind;
         entity.randomSeed = randomSeed;
+        entity.connection = connection;
         final long id = database.accountDao().insert(entity);
         final var account = new Account(id, address, entity.randomSeed);
         if (password != null) {
@@ -51,8 +55,18 @@ public class AccountRepository extends AbstractRepository {
 
     public ListenableFuture<Account> createAccountAsync(
             final @NonNull BareJid address, final String password, final boolean loginAndBind) {
+        return createAccountAsync(address, password, loginAndBind, null);
+    }
+
+    private ListenableFuture<Account> createAccountAsync(
+            final @NonNull BareJid address,
+            final String password,
+            final boolean loginAndBind,
+            final Connection connection) {
         final var creationFuture =
-                Futures.submit(() -> createAccount(address, password, loginAndBind), IO_EXECUTOR);
+                Futures.submit(
+                        () -> createAccount(address, password, loginAndBind, connection),
+                        IO_EXECUTOR);
         return Futures.transformAsync(
                 creationFuture,
                 account ->
@@ -66,6 +80,11 @@ public class AccountRepository extends AbstractRepository {
     public ListenableFuture<Account> createAccountAsync(
             final @NonNull BareJid address, final String password) {
         return createAccountAsync(address, password, true);
+    }
+
+    public ListenableFuture<Account> createAccountAsync(
+            final @NonNull BareJid address, final String password, final Connection connection) {
+        return createAccountAsync(address, password, true, connection);
     }
 
     public ListenableFuture<RegistrationManager.Registration> getRegistration(

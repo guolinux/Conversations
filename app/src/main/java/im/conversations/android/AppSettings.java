@@ -19,6 +19,20 @@ public class AppSettings {
         this.context = context;
     }
 
+    public boolean showHostnameAndPort() {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(
+                        "show_connection_options",
+                        context.getResources().getBoolean(R.bool.show_connection_options));
+    }
+
+    public boolean isChannelBindingRequired() {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(
+                        "channel_binding_required",
+                        context.getResources().getBoolean(R.bool.channel_binding_required));
+    }
+
     public Uri getRingtone() {
         final SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(context);

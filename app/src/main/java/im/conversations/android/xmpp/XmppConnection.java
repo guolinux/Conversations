@@ -18,6 +18,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+import im.conversations.android.AppSettings;
 import im.conversations.android.BuildConfig;
 import im.conversations.android.Conversations;
 import im.conversations.android.IDs;
@@ -65,6 +66,7 @@ import im.conversations.android.xmpp.processor.MessageAcknowledgeProcessor;
 import im.conversations.android.xmpp.processor.MessageProcessor;
 import im.conversations.android.xmpp.processor.PresenceProcessor;
 import im.conversations.android.xmpp.sasl.ChannelBinding;
+import im.conversations.android.xmpp.sasl.ChannelBindingMechanism;
 import im.conversations.android.xmpp.sasl.HashedToken;
 import im.conversations.android.xmpp.sasl.SaslMechanism;
 import java.io.IOException;
@@ -1249,9 +1251,10 @@ public class XmppConnection implements Runnable {
             throw new StateChangingException(ConnectionState.UNAUTHORIZED);
         }
         final SaslMechanism.Factory saslFactory = new SaslMechanism.Factory(account, credential);
+        final boolean requireChannelBinding = new AppSettings(context).isChannelBindingRequired();
+        final var sslVersion = SSLSockets.version(this.socket);
         final SaslMechanism saslMechanism =
-                saslFactory.of(
-                        mechanisms, channelBindings, version, SSLSockets.version(this.socket));
+                saslFactory.of(mechanisms, channelBindings, version, sslVersion, requireChannelBinding);
         this.saslMechanism = validate(saslMechanism, mechanisms);
         final boolean quickStartAvailable;
         final String firstMessage =
@@ -1274,8 +1277,13 @@ public class XmppConnection implements Runnable {
                 final Element fast =
                         inline == null ? null : inline.findChild("fast", Namespace.FAST);
                 final Collection<String> fastMechanisms = SaslMechanism.mechanisms(fast);
+                final var bestToken = HashedToken.Mechanism.best(fastMechanisms, sslVersion);
                 hashTokenRequest =
-                        HashedToken.Mechanism.best(fastMechanisms, SSLSockets.version(this.socket));
+                        requireChannelBinding
+                                        && bestToken != null
+                                        && bestToken.channelBinding == ChannelBinding.NONE
+                                ? null
+                                : bestToken;
             }
             final Collection<String> bindFeatures = BindInlineFeatures.get(inline);
             quickStartAvailable =
@@ -1321,6 +1329,10 @@ public class XmppConnection implements Runnable {
                     account.address + ": unable to find supported SASL mechanism in " + mechanisms);
             throw new StateChangingException(ConnectionState.INCOMPATIBLE_SERVER);
         }
+        if (!meetsChannelBindingPolicy(saslMechanism)) {
+            LOGGER.info("Server did not negotiate a channel-bound authentication mechanism");
+            throw new StateChangingException(ConnectionState.INCOMPATIBLE_SERVER);
+        }
         if (SaslMechanism.hashedToken(saslMechanism)) {
             return saslMechanism;
         }
@@ -1340,6 +1352,12 @@ public class XmppConnection implements Runnable {
             throw new StateChangingException(ConnectionState.DOWNGRADE_ATTACK);
         }
         return saslMechanism;
+    }
+
+    private boolean meetsChannelBindingPolicy(final SaslMechanism mechanism) {
+        return !new AppSettings(context).isChannelBindingRequired()
+                || (mechanism instanceof ChannelBindingMechanism bound
+                        && bound.getChannelBinding() != ChannelBinding.NONE);
     }
 
     private Element generateAuthenticationRequest(
@@ -1682,6 +1700,7 @@ public class XmppConnection implements Runnable {
         final boolean secureConnection = sslVersion != SSLSockets.Version.NONE;
         if (secureConnection
                 && quickStartMechanism != null
+                && meetsChannelBindingPolicy(quickStartMechanism)
                 && ConversationsDatabase.getInstance(context)
                         .accountDao()
                         .quickStartAvailable(account.id)) {

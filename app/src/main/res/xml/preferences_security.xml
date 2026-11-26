@@ -8,7 +8,7 @@
             android:entryValues="@array/omemo_setting_entry_values"
             android:icon="@drawable/ic_lock_24dp"
             android:key="omemo"
-            android:summary="@string/pref_omemo_setting_summary_default_on"
+            android:summary="@string/pref_omemo_setting_summary_default_off"
             android:title="@string/pref_omemo_setting" />
         <SwitchPreferenceCompat
             android:defaultValue="@bool/btbv"
@@ -26,6 +26,7 @@
             android:summary="@string/pref_title_trust_system_ca_store_summary"
             android:title="@string/pref_title_trust_system_ca_store" />
         <SwitchPreferenceCompat
+            android:defaultValue="@bool/channel_binding_required"
             android:icon="@drawable/ic_private_connectivity_24dp"
             android:key="channel_binding_required"
             android:summary="@string/detect_mim_summary"

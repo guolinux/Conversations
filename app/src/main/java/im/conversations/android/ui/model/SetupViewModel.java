@@ -18,6 +18,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+import im.conversations.android.AppSettings;
 import im.conversations.android.R;
 import im.conversations.android.database.model.Account;
 import im.conversations.android.database.model.Connection;
@@ -47,15 +48,19 @@ public class SetupViewModel extends AndroidViewModel {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SetupViewModel.class);
 
-    private final MutableLiveData<String> xmppAddress = new MutableLiveData<>();
+    private static final String DEFAULT_HOSTNAME = "qute.hicam.net";
+    private static final String DEFAULT_XMPP_ADDRESS = "@" + DEFAULT_HOSTNAME;
+    private static final String DEFAULT_PORT = "57972";
+
+    private final MutableLiveData<String> xmppAddress = new MutableLiveData<>(DEFAULT_XMPP_ADDRESS);
     private final MutableLiveData<String> xmppAddressError = new MutableLiveData<>();
     private final MutableLiveData<String> password = new MutableLiveData<>();
     private final MutableLiveData<String> passwordError = new MutableLiveData<>();
-    private final MutableLiveData<String> hostname = new MutableLiveData<>();
+    private final MutableLiveData<String> hostname = new MutableLiveData<>(DEFAULT_HOSTNAME);
     private final MutableLiveData<String> hostnameError = new MutableLiveData<>();
-    private final MutableLiveData<String> port = new MutableLiveData<>();
+    private final MutableLiveData<String> port = new MutableLiveData<>(DEFAULT_PORT);
     private final MutableLiveData<String> portError = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> opportunisticTls = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> opportunisticTls = new MutableLiveData<>(false);
 
     private final MutableLiveData<Event<String>> genericErrorEvent = new MutableLiveData<>();
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>(false);
@@ -146,6 +151,10 @@ public class SetupViewModel extends AndroidViewModel {
         return this.genericErrorEvent;
     }
 
+    public boolean showHostnameAndPort() {
+        return new AppSettings(getApplication()).showHostnameAndPort();
+    }
+
     public boolean submitXmppAddress() {
         final var account = this.account;
         final var userInput = Strings.nullToEmpty(this.xmppAddress.getValue()).trim();
@@ -156,33 +165,44 @@ public class SetupViewModel extends AndroidViewModel {
         }
         final BareJid address;
         try {
+            if (userInput.startsWith("@")) {
+                throw new IllegalArgumentException("Missing XMPP localpart");
+            }
             address = JidCreate.bareFrom(userInput);
             Resolver.checkDomain(address.asDomainBareJid());
         } catch (final XmppStringprepException | IllegalArgumentException e) {
             this.xmppAddressError.postValue(getApplication().getString(R.string.invalid_jid));
             return true;
         }
+        final boolean customConnection = showHostnameAndPort();
+        final Connection connection = customConnection ? readConnection() : null;
+        if (customConnection && connection == null) {
+            return true;
+        }
         this.trustDecisions.clear();
         if (account != null) {
             if (account.address.equals(address)) {
-                this.accountRepository.reconnect(account);
-                decideNextStep(Target.ENTER_ADDRESS, account);
+                if (customConnection) {
+                    saveConnection(account, connection, Target.ENTER_ADDRESS);
+                } else {
+                    this.accountRepository.reconnect(account);
+                    decideNextStep(Target.ENTER_ADDRESS, account);
+                }
                 return true;
             } else {
                 this.unregisterTrustDecisionCallback();
                 this.account = null;
 
-                // when the XMPP address changes we want to reset connection info too
-                // this is partially to indicate that Conversations might not actually use those
-                // connection settings if the connection works without them
-                this.hostname.setValue(null);
-                this.port.setValue(null);
-                this.opportunisticTls.setValue(false);
+                if (!customConnection) {
+                    this.hostname.setValue(DEFAULT_HOSTNAME);
+                    this.port.setValue(DEFAULT_PORT);
+                    this.opportunisticTls.setValue(false);
+                }
 
                 this.accountRepository.deleteAccountAsync(account);
             }
         }
-        createAccount(address);
+        createAccount(address, connection);
         return true;
     }
 
@@ -230,13 +250,14 @@ public class SetupViewModel extends AndroidViewModel {
                 });
     }
 
-    private void createAccount(final BareJid address) {
+    private void createAccount(final BareJid address, final Connection connection) {
 
         // if the user hasn't entered anything we want this to be null so we don't store credentials
         final String password = Strings.emptyToNull(this.password.getValue());
         // post parsed/normalized jid back into UI
         this.xmppAddress.postValue(address.toString());
-        final var creationFuture = this.accountRepository.createAccountAsync(address, password);
+        final var creationFuture =
+                this.accountRepository.createAccountAsync(address, password, connection);
         this.setCurrentOperation(creationFuture);
         Futures.addCallback(
                 creationFuture,
@@ -391,22 +412,34 @@ public class SetupViewModel extends AndroidViewModel {
             this.redirectIfNecessary(Target.ENTER_HOSTNAME, Target.ENTER_ADDRESS);
             return true;
         }
+        final var connection = readConnection();
+        if (connection != null) {
+            this.trustDecisions.clear();
+            saveConnection(account, connection, Target.ENTER_HOSTNAME);
+        }
+        return true;
+    }
+
+    private Connection readConnection() {
         final String hostname =
                 Strings.nullToEmpty(this.hostname.getValue()).trim().toLowerCase(Locale.ROOT);
         if (hostname.isEmpty()
                 || CharMatcher.whitespace().matchesAnyOf(hostname)
                 || Resolver.invalidHostname(hostname)) {
             this.hostnameError.postValue(getApplication().getString(R.string.not_valid_hostname));
-            return true;
+            return null;
         }
         final Integer port = Ints.tryParse(Strings.nullToEmpty(this.port.getValue()));
-        if (port == null || port < 0 || port > 65535) {
+        if (port == null || port < 1 || port > 65535) {
             this.portError.postValue(getApplication().getString(R.string.invalid));
-            return true;
+            return null;
         }
-        this.trustDecisions.clear();
-        final boolean directTls = Boolean.FALSE.equals(this.opportunisticTls.getValue());
-        final var connection = new Connection(hostname, port, directTls);
+        final boolean directTls = !Boolean.TRUE.equals(this.opportunisticTls.getValue());
+        return new Connection(hostname, port, directTls);
+    }
+
+    private void saveConnection(
+            final Account account, final Connection connection, final Target current) {
         final var setConnectionFuture =
                 this.accountRepository.setConnectionAsync(account, connection);
         this.setCurrentOperation(setConnectionFuture);
@@ -415,7 +448,7 @@ public class SetupViewModel extends AndroidViewModel {
                 new FutureCallback<>() {
                     @Override
                     public void onSuccess(final Account result) {
-                        decideNextStep(Target.ENTER_HOSTNAME, account);
+                        decideNextStep(current, account);
                     }
 
                     @Override
@@ -425,7 +458,6 @@ public class SetupViewModel extends AndroidViewModel {
                     }
                 },
                 MoreExecutors.directExecutor());
-        return true;
     }
 
     public boolean submitPassword() {
