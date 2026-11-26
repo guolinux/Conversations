@@ -122,6 +122,9 @@ public class EditAccountActivity extends OmemoActivity
     public static final String EXTRA_OPENED_FROM_NOTIFICATION = "opened_from_notification";
     public static final String EXTRA_FORCE_REGISTER = "force_register";
 
+    private static final String DEFAULT_ACCOUNT_HOSTNAME = "qute.hicam.net";
+    private static final int DEFAULT_ACCOUNT_PORT = 57972;
+
     private static final int REQUEST_DATA_SAVER = 0xf244;
     private static final int REQUEST_CHANGE_STATUS = 0xee11;
     private static final int REQUEST_ORBOT = 0xff22;
@@ -832,6 +835,20 @@ public class EditAccountActivity extends OmemoActivity
         this.binding = DataBindingUtil.setContentView(this, R.layout.activity_edit_account);
         Activities.setStatusAndNavigationBarColors(this, binding.getRoot());
         setSupportActionBar(binding.toolbar);
+        final var intent = getIntent();
+        final boolean prefillNewAccount =
+                savedInstanceState == null
+                        && QuickConversationsService.isConversations()
+                        && (intent == null
+                                || (!intent.hasExtra("jid") && intent.getData() == null));
+        if (prefillNewAccount) {
+            binding.accountJid.setText("@" + DEFAULT_ACCOUNT_HOSTNAME);
+            binding.accountJid.setSelection(0);
+            binding.hostname.setText(DEFAULT_ACCOUNT_HOSTNAME);
+        }
+        binding.port.setText(
+                String.valueOf(
+                        prefillNewAccount ? DEFAULT_ACCOUNT_PORT : Resolver.XMPP_PORT_STARTTLS));
         binding.accountJid.addTextChangedListener(this.mTextWatcher);
         binding.accountJid.setOnFocusChangeListener(this.mEditTextFocusListener);
         this.binding.accountPassword.addTextChangedListener(this.mTextWatcher);
@@ -840,7 +857,6 @@ public class EditAccountActivity extends OmemoActivity
         this.binding.hostname.addTextChangedListener(mTextWatcher);
         this.binding.hostname.setOnFocusChangeListener(mEditTextFocusListener);
         this.binding.clearDevices.setOnClickListener(v -> showWipePepDialog());
-        this.binding.port.setText(String.valueOf(Resolver.XMPP_PORT_STARTTLS));
         this.binding.port.addTextChangedListener(mTextWatcher);
         this.binding.saveButton.setOnClickListener(this.mSaveButtonClickListener);
         this.binding.cancelButton.setOnClickListener(this.mCancelButtonClickListener);
